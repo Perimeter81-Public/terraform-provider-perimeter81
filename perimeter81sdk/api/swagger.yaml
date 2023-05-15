@@ -1,0 +1,3102 @@
+openapi: 3.0.0
+info:
+  title: Perimeter81 Public API
+  description: The YAML for Preimeter81 Public API.
+  contact: {}
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/perimeter81/public-api-yaml/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: https://api.perimeter81.com/api/rest
+  description: Perimeter81 API Auto Mocking
+paths:
+  /v2/users:
+    get:
+      tags:
+      - Users
+      summary: Returns paginated list of users
+      description: "Required permissions: `[\"user:read\"]`<br><br>Returns paginated\
+        \ list of users."
+      operationId: getUsers
+      parameters:
+      - name: page
+        in: query
+        description: Page number to start from
+        required: false
+        style: form
+        explode: false
+        schema:
+          minimum: 1
+          type: integer
+      - name: limit
+        in: query
+        description: Amount of users per page
+        required: false
+        style: form
+        explode: false
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+      - name: q
+        in: query
+        description: Search string or URL encoded JSON
+        required: false
+        style: form
+        explode: false
+        schema:
+          type: string
+      - name: qType
+        in: query
+        description: Type of search.
+        required: false
+        style: form
+        explode: false
+        schema:
+          type: string
+          default: full
+          enum:
+          - full
+          - partial
+      - name: qOperator
+        in: query
+        description: Applicable only if `qType == partial`.
+        required: false
+        style: form
+        explode: false
+        schema:
+          type: string
+          default: or
+          enum:
+          - and
+          - or
+      - name: sort
+        in: query
+        description: "Map of fields to sort direction, example query: `?sort[field1]=asc&sort[field2]=desc`."
+        required: false
+        style: deepObject
+        explode: true
+        schema:
+          type: object
+          example:
+            field1: asc
+            field2: desc
+      responses:
+        "200":
+          description: ' - UserList'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Resource not found
+    post:
+      tags:
+      - Users
+      summary: Creates a new user
+      description: "Required permissions: `[\"user:create\"]`<br><br>Creates a new\
+        \ user."
+      operationId: createUser
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserPayloadModel'
+            example:
+              email: mymail@mail.com
+              inviteMessage: Please join the group
+        required: true
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Bad request - The object sent was not cmplient with the required
+            object.
+        "401":
+          description: Unauthorized
+        "402":
+          description: Insufficient licenses
+        "403":
+          description: Forbidden
+        "409":
+          description: Conflict
+  /v2/users/{userId}:
+    delete:
+      tags:
+      - Users
+      summary: Remove User
+      description: "Required permissions: `[\"user:delete\"]`<br><br>Marks a User\
+        \ as discontinued - user will remain in the system as inactive. The license\
+        \ of this user will be freed."
+      operationId: deleteUser
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          maxLength: 100
+          minLength: 1
+          type: string
+      responses:
+        "200":
+          description: User deactivated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Frobbiden
+        "404":
+          description: Resource not found
+  /v2/groups:
+    get:
+      tags:
+      - Groups
+      summary: Returns paginated list of groups
+      description: "Required permissions: `[\"group:read\"]`<br><br>Returns paginated\
+        \ list of groups."
+      operationId: getGroups
+      parameters:
+      - name: page
+        in: query
+        description: Page to start from
+        required: false
+        style: form
+        explode: false
+        schema:
+          minimum: 1
+          type: integer
+          description: Page to start from
+      - name: limit
+        in: query
+        description: Amount of records per page
+        required: false
+        style: form
+        explode: false
+        schema:
+          maximum: 100
+          minimum: 1
+          type: integer
+          description: Amount of records per page
+      - name: sort
+        in: query
+        description: "Map of fields to sort direction, example query: `?sort[field1]=asc&sort[field2]=desc`."
+        required: false
+        style: deepObject
+        explode: true
+        schema:
+          type: object
+          description: "Map of fields to sort direction, example query: `?sort[field1]=asc&sort[field2]=desc`."
+          example:
+            field1: asc
+            field2: desc
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupList'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+    post:
+      tags:
+      - Groups
+      summary: Creates a new Group
+      description: "Required permissions: `[\"group:create\"]`<br><br>Creates a new\
+        \ group."
+      operationId: createGroup
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupPayload'
+        required: true
+      responses:
+        "201":
+          description: Group created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "426":
+          description: Upgrade required - To fill this request you need to purchase
+            more license.
+  /v2/groups/{groupId}:
+    delete:
+      tags:
+      - Groups
+      summary: Remove a group by ID
+      description: "Required permissions: `[\"group:delete\"]`<br><br>Remove a group\
+        \ by ID."
+      operationId: removeGroup
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No groups where found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Resource not found
+  /v2/groups/{groupId}/member/{userId}:
+    post:
+      tags:
+      - Groups
+      summary: Add a member to a group.
+      description: "Required permissions: `[\"group.member:create\"]`<br><br>Add a\
+        \ member to a group."
+      operationId: addGroupMember
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "201":
+          description: User added to the Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: "`{member/group}` not found"
+        "409":
+          description: Conflict
+    delete:
+      tags:
+      - Groups
+      summary: Remove a member from a group.
+      description: "Required permissions: `[\"group.member:delete\"]`<br><br>Remove\
+        \ a member from a group."
+      operationId: removeGroupMember
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: User removed from the Goroup.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: "`{member/group}` not found"
+  /v2/networks:
+    get:
+      tags:
+      - Networks
+      summary: Get all Networks
+      description: List all networks
+      operationId: getNetworks
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Network'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbbiden
+      security:
+      - bearer: []
+    post:
+      tags:
+      - Networks
+      summary: Create network
+      description: "Required permissions: `[\"network:create\"]`<br><br>Create networks."
+      operationId: NetworksControllerV2_networkCreate
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeployNetworkPayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "402":
+          description: Insufficient licenses
+        "403":
+          description: forbidden
+      security:
+      - bearer: []
+  /v2/networks/{networkId}:
+    get:
+      tags:
+      - Networks
+      summary: Get network by Id
+      description: "Required permissions: `[\"network:read\"]`<br><br>List network."
+      operationId: NetworksControllerV2_networkFind
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Network'
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+    put:
+      tags:
+      - Networks
+      summary: Update network
+      description: "Required permissions: `[\"network:update\"]`<br><br>Update network."
+      operationId: NetworksControllerV2_networkUpdate
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNetworkDto'
+        required: true
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Network'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+    delete:
+      tags:
+      - Networks
+      summary: Delete network
+      description: "Required permissions: `[\"network:delete\"]`<br><br>Delete network."
+      operationId: NetworksControllerV2_networkDelete
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResult'
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+  /v2/networks/{networkId}/instances:
+    post:
+      tags:
+      - Gateways
+      summary: Add gateway
+      description: "Required permissions: `[\"network:create\"]`<br><br>Add gateway."
+      operationId: NetworksControllerV2_addNetworkInstance
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegionInNetworkload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "402":
+          description: Insufficient licenses
+        "403":
+          description: forbidden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+    delete:
+      tags:
+      - Gateways
+      summary: Remove Gateways from Network
+      description: "Required permissions: `[\"network:update\"]`<br><br>Remove Gateways\
+        \ from Network."
+      operationId: NetworksControllerV2_deleteNetworkInstance
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveRegionInstance'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResult'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+  /v2/networks/status/{statusId}:
+    get:
+      tags:
+      - Networks
+      summary: Get status of asynchronous operations.
+      description: "Required permissions: `[\"network:read\"]`<br><br> status of asynchronous\
+        \ operations."
+      operationId: NetworksControllerV2_status
+      parameters:
+      - name: statusId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationStatus'
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+        "404":
+          description: Status not found
+      security:
+      - bearer: []
+  /v2/regions:
+    get:
+      tags:
+      - Regions
+      summary: List of available regions
+      description: "Required permissions: `[\"addon:read\"]`<br><br>List of regions."
+      operationId: NetworksControllerV2_getRegions
+      parameters: []
+      responses:
+        "200":
+          description: Completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionsList'
+        "401":
+          description: Unauthorized
+        "403":
+          description: forbidden
+      security:
+      - bearer: []
+  /v2/networks/{networkId}/regions:
+    put:
+      tags:
+      - Regions
+      summary: Add regions to a network
+      description: "Required permissions: `[\"Network:Update\"]`<br><br>Network Update."
+      operationId: NetworksControllerV2_addNetworkRegion
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegionPayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResult'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbbiden
+        "404":
+          description: Network not found
+      security:
+      - bearer: []
+    delete:
+      tags:
+      - Regions
+      summary: Remove regions from network
+      description: "Required permissions: `[\"Network:Delete\"]`<br><br>Remove Region.\
+        \ Gateways will still be avaidble through the remaining regions, in case you\
+        \ removed the last region, the gateways will be removed as well."
+      operationId: NetworksControllerV2_deleteNetworkRegion
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveRegionDTO'
+        required: true
+      responses:
+        "200":
+          description: Completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRegionPayload'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbbiden
+        "404":
+          description: Region\Network not found
+      security:
+      - bearer: []
+  /networks/{networkId}/tunnels/wireguard:
+    post:
+      tags:
+      - Wireguard
+      summary: Create a new Wireguard tunnel
+      description: "Required permissions: `[\"network:write\"]`"
+      operationId: createWireguardTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWireguardTunnelPayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "402":
+          description: Insufficient licenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/wireguard/{tunnelId}:
+    get:
+      tags:
+      - Wireguard
+      summary: Get a Wireguard tunnel
+      description: "Required permissions: `[\"network:read\"]`"
+      operationId: getWireguardTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WireguardTunnel'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - Wireguard
+      summary: Update a Wireguard tunnel
+      description: "Required permissions: `[\"network:write\"]`"
+      operationId: updateWireguardTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WireGuradDetails'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - Wireguard
+      summary: Delete Wireguard tunnel
+      description: "Required permissions: `[\"network:delete\"]`"
+      operationId: deleteWireguardTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/openvpn:
+    post:
+      tags:
+      - OpenVPN
+      summary: Create a new OpenVPN tunnel
+      description: "Required permissions: `[\"network:write]`"
+      operationId: createOpenVPNTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaseTunnelValues'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "402":
+          description: Insufficient licenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/openvpn/{tunnelId}:
+    get:
+      tags:
+      - OpenVPN
+      summary: Get one openVPN tunnel
+      description: "Required permissions: `[\"network:read\"]`"
+      operationId: getOpenVPNTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenVPNTunnel'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - OpenVPN
+      summary: Update openVPN Tunnel
+      description: "Required permissions: `[\"network:write\"]`"
+      operationId: updateOpenVPNTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - OpenVPN
+      summary: Delete OpenVPN tunnel
+      description: "Required permissions: `[\"network:delete\"]`"
+      operationId: deleteOpenVPNTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/ipsec/single:
+    post:
+      tags:
+      - IPSec-Single
+      summary: Create a new IPSec Single tunnel
+      description: "Required permissions: `[\"network:write]`"
+      operationId: createIPSecSingleTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIPSecSinglePayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "402":
+          description: Insufficient licenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/ipsec/single/{tunnelId}:
+    get:
+      tags:
+      - IPSec-Single
+      summary: Get one IPSec Single tunnel
+      description: "Required permissions: `[\"network:read\"]`"
+      operationId: getIPSecSingleTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPSecSingleTunnel'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - IPSec-Single
+      summary: Update IPSec Single Tunnel
+      description: "Required permissions: `[\"network:write\"]`"
+      operationId: updateIPSecSingleTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IPSecSingleDetails'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - IPSec-Single
+      summary: Delete IPSec Single tunnel
+      description: "Required permissions: `[\"network:delete\"]`"
+      operationId: deleteIPSecSingleTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/ipsec/redundant:
+    post:
+      tags:
+      - IPSec-Redundant
+      summary: Create a new IPSec Redundant tunnel
+      description: "Required permissions: `[\"network:write]`"
+      operationId: createIPSecRedundantTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIPSecRedundantPayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "402":
+          description: Insufficient licenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /networks/{networkId}/tunnels/ipsec/redundant/{tunnelId}:
+    get:
+      tags:
+      - IPSec-Redundant
+      summary: Get one IPSec Redundant tunnel
+      description: "Required permissions: `[\"network:read\"]`"
+      operationId: getIPSecRedundantTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPSecRedundantTunnels'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - IPSec-Redundant
+      summary: Update IPSec Redundant Tunnel
+      description: "Required permissions: `[\"network:write\"]`"
+      operationId: updateIPSecRedundantTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIPSecRedundantPayload'
+        required: true
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - IPSec-Redundant
+      summary: Delete IPSec Redundant tunnel
+      description: "Required permissions: `[\"network:delete\"]`"
+      operationId: deleteIPSecRedundantTunnel
+      parameters:
+      - name: networkId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tunnelId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncOperationResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    AsyncOperationResponse:
+      type: object
+      properties:
+        statusUrl:
+          type: string
+        samplingTime:
+          type: integer
+      example:
+        samplingTime: 0
+        statusUrl: statusUrl
+    Error:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+    CreateUserPayloadModel:
+      required:
+      - email
+      - inviteMessage
+      type: object
+      properties:
+        idpType:
+          type: string
+          enum:
+          - database
+          - saml
+          - gsuite
+          - okta
+          - azureAD
+          - adLdap
+        accessGroups:
+          type: array
+          items:
+            type: string
+        email:
+          type: string
+          description: User email.
+          format: email
+        noEmailVerification:
+          type: boolean
+          description: Skips email verification if set to `true`.
+        inviteMessage:
+          type: string
+          description: Invitation message that will be sent by email.
+        profileData:
+          $ref: '#/components/schemas/UserProfilePayload'
+    UserProfilePayload:
+      type: object
+      properties:
+        firstName:
+          maxLength: 30
+          minLength: 0
+          pattern: "^[a-z '-]+$"
+          type: string
+        lastName:
+          maxLength: 30
+          minLength: 0
+          pattern: "^[a-z '-]+$"
+          type: string
+        roleName:
+          type: string
+        phone:
+          maxLength: 30
+          minLength: 0
+          pattern: "^\\+?[0-9]{9,15}$"
+          type: string
+    User:
+      required:
+      - createdAt
+      - email
+      - emailVerified
+      - firstName
+      - id
+      - idProviders
+      - initials
+      - initialsColor
+      - invitationAttempts
+      - invitationToken
+      - inviteMessage
+      - lastName
+      - role
+      - roleName
+      - tenantId
+      - terminated
+      - username
+      type: object
+      properties:
+        initialsColor:
+          type: string
+        invitationAttempts:
+          type: integer
+        invitationToken:
+          type: string
+          description: Invitation token.
+        role:
+          type: string
+          description: Reference ID to `Role`.
+        idProviders:
+          $ref: '#/components/schemas/IdProviderMap'
+        inviteMessage:
+          type: string
+          description: Invitation message sent to the user.
+        terminated:
+          type: boolean
+          description: Indicates that the user has been deleted.
+        email:
+          type: string
+          description: User email.
+          format: UTF-8
+        emailVerified:
+          type: boolean
+          description: Whether the user verified his email.
+        initials:
+          type: string
+          description: User initials.
+        roleName:
+          type: string
+          description: User role name.
+        lastName:
+          type: string
+          description: User last name.
+        firstName:
+          type: string
+          description: User first name.
+        username:
+          type: string
+          description: User name.
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        lastName: lastName
+        role: role
+        initials: initials
+        inviteMessage: inviteMessage
+        idProviders:
+          adLdap:
+            idpConnName: idpConnName
+            groups:
+            - groups
+            - groups
+            userId: userId
+          database: null
+          azureAD: null
+          saml: null
+          okta: null
+          gsuite: null
+        invitationAttempts: 0
+        emailVerified: true
+        firstName: firstName
+        createdAt: createdAt
+        roleName: roleName
+        tenantId: tenantId
+        initialsColor: initialsColor
+        id: id
+        invitationToken: invitationToken
+        terminated: true
+        email: email
+        username: username
+        updatedAt: updatedAt
+    CreateGroupPayload:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          minLength: 1
+          type: string
+          description: The name of the new group.
+        description:
+          minLength: 1
+          type: string
+          description: The description of the new group.
+    IdProvider:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: User ID on the IDP side.
+        groups:
+          type: array
+          description: List of group names on the IDP side.
+          items:
+            type: string
+        idpConnName:
+          type: string
+          description: IDP connection name.
+      example:
+        idpConnName: idpConnName
+        groups:
+        - groups
+        - groups
+        userId: userId
+    IdProviderMap:
+      type: object
+      properties:
+        adLdap:
+          $ref: '#/components/schemas/IdProvider'
+        azureAD:
+          $ref: '#/components/schemas/IdProvider'
+        database:
+          $ref: '#/components/schemas/IdProvider'
+        gsuite:
+          $ref: '#/components/schemas/IdProvider'
+        okta:
+          $ref: '#/components/schemas/IdProvider'
+        saml:
+          $ref: '#/components/schemas/IdProvider'
+      description: IDP connections of the user.
+      example:
+        adLdap:
+          idpConnName: idpConnName
+          groups:
+          - groups
+          - groups
+          userId: userId
+        database: null
+        azureAD: null
+        saml: null
+        okta: null
+        gsuite: null
+    GroupList:
+      required:
+      - data
+      - itemsTotal
+      - page
+      - totalPage
+      type: object
+      properties:
+        data:
+          type: array
+          description: List of groups.
+          items:
+            $ref: '#/components/schemas/Group'
+        page:
+          type: number
+          description: Page number.
+          example: 1
+        totalPage:
+          type: number
+          description: Total pages in list.
+          example: 1
+        itemsTotal:
+          type: number
+          description: Items in total.
+          example: 10
+      example:
+        data:
+        - createdAt: createdAt
+          isDefault: true
+          name: name
+          tenantId: tenantId
+          id: id
+          networks:
+          - networks
+          - networks
+          users:
+          - users
+          - users
+          applications:
+          - applications
+          - applications
+          vpnLocations:
+          - vpnLocations
+          - vpnLocations
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          isDefault: true
+          name: name
+          tenantId: tenantId
+          id: id
+          networks:
+          - networks
+          - networks
+          users:
+          - users
+          - users
+          applications:
+          - applications
+          - applications
+          vpnLocations:
+          - vpnLocations
+          - vpnLocations
+          updatedAt: updatedAt
+        itemsTotal: 10
+        totalPage: 1
+        page: 1
+    Group:
+      required:
+      - applications
+      - createdAt
+      - id
+      - isDefault
+      - name
+      - networks
+      - tenantId
+      - users
+      - vpnLocations
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the group.
+        isDefault:
+          type: boolean
+          description: Indicates that the group is default.
+        applications:
+          type: array
+          description: Group applications.
+          items:
+            type: string
+        networks:
+          type: array
+          description: Group networks.
+          items:
+            type: string
+        vpnLocations:
+          type: array
+          description: Group VPN locations.
+          items:
+            type: string
+        users:
+          type: array
+          description: Group members.
+          items:
+            type: string
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        createdAt: createdAt
+        isDefault: true
+        name: name
+        tenantId: tenantId
+        id: id
+        networks:
+        - networks
+        - networks
+        users:
+        - users
+        - users
+        applications:
+        - applications
+        - applications
+        vpnLocations:
+        - vpnLocations
+        - vpnLocations
+        updatedAt: updatedAt
+    DeployNetworkPayload:
+      required:
+      - network
+      - regions
+      type: object
+      properties:
+        network:
+          $ref: '#/components/schemas/CreateNetworkPayload'
+        regions:
+          type: array
+          description: Region list.
+          items:
+            $ref: '#/components/schemas/CreateRegionInNetworkload'
+    AsyncOperationStatus:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        result:
+          $ref: '#/components/schemas/AsyncOperationResult'
+      example:
+        result:
+          reason:
+          - reason
+          - reason
+          resource: resource
+          statusCode: 0
+        completed: true
+    AsyncOperationResult:
+      type: object
+      properties:
+        resource:
+          type: string
+        statusCode:
+          type: integer
+        reason:
+          type: array
+          description: Reasons list.
+          items:
+            type: string
+      example:
+        reason:
+        - reason
+        - reason
+        resource: resource
+        statusCode: 0
+    RegionsList:
+      properties:
+        regions:
+          type: array
+          description: description of regions dto object.
+          items:
+            $ref: '#/components/schemas/Region'
+      example:
+        regions:
+        - createdAt: createdAt
+          countryCode: countryCode
+          displayName: displayName
+          name: name
+          objectName: objectName
+          className: className
+          id: id
+          continentCode: continentCode
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          countryCode: countryCode
+          displayName: displayName
+          name: name
+          objectName: objectName
+          className: className
+          id: id
+          continentCode: continentCode
+          updatedAt: updatedAt
+    RemoveRegionInstance:
+      required:
+      - regions
+      type: object
+      properties:
+        regions:
+          type: array
+          description: Region list.
+          items:
+            $ref: '#/components/schemas/RemoveRegionPayload'
+    RemoveRegionPayload:
+      properties:
+        regionId:
+          type: string
+          description: Region ID.
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/RemoveInstancePayload'
+    RemoveInstancePayload:
+      properties:
+        id:
+          type: string
+    RemoveRegionDTO:
+      properties:
+        regionId:
+          type: string
+    Region:
+      properties:
+        countryCode:
+          type: string
+        continentCode:
+          type: string
+        displayName:
+          type: string
+        name:
+          type: string
+        className:
+          type: string
+        objectName:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        id:
+          type: string
+      example:
+        createdAt: createdAt
+        countryCode: countryCode
+        displayName: displayName
+        name: name
+        objectName: objectName
+        className: className
+        id: id
+        continentCode: continentCode
+        updatedAt: updatedAt
+    NetworkTunnel:
+      required:
+      - createdAt
+      - id
+      - instance
+      - interfaceName
+      - leftAllowedIP
+      - leftEndpoint
+      - network
+      - region
+      - requestConfigToken
+      - tenantId
+      - type
+      type: object
+      properties:
+        instance:
+          type: string
+          description: ID of the network instance.
+        interfaceName:
+          type: string
+        leftAllowedIP:
+          type: array
+          items:
+            type: string
+        leftEndpoint:
+          type: string
+        network:
+          type: string
+          description: ID of the network.
+        region:
+          type: string
+          description: ID of the network region.
+        requestConfigToken:
+          type: string
+        type:
+          type: string
+          enum:
+          - connector
+          - ipsec
+          - openvpn
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        requestConfigToken: requestConfigToken
+        leftAllowedIP:
+        - leftAllowedIP
+        - leftAllowedIP
+        createdAt: createdAt
+        instance: instance
+        tenantId: tenantId
+        interfaceName: interfaceName
+        id: id
+        region: region
+        type: connector
+        leftEndpoint: leftEndpoint
+        network: network
+        updatedAt: updatedAt
+    NetworkInstance:
+      required:
+      - createdAt
+      - dns
+      - id
+      - imageType
+      - imageVersion
+      - instanceType
+      - ip
+      - network
+      - region
+      - resourceId
+      - tenantId
+      - tunnels
+      type: object
+      properties:
+        network:
+          type: string
+          description: ID of the network.
+        region:
+          type: string
+          description: ID of the network region.
+        instanceType:
+          type: string
+        imageType:
+          type: string
+        imageVersion:
+          type: string
+        resourceId:
+          type: string
+          description: Unique ID.
+        dns:
+          type: string
+        ip:
+          type: string
+        tunnels:
+          type: array
+          description: List of network tunnels.
+          items:
+            $ref: '#/components/schemas/NetworkTunnel'
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        imageVersion: imageVersion
+        resourceId: resourceId
+        instanceType: instanceType
+        ip: ip
+        dns: dns
+        network: network
+        tunnels:
+        - requestConfigToken: requestConfigToken
+          leftAllowedIP:
+          - leftAllowedIP
+          - leftAllowedIP
+          createdAt: createdAt
+          instance: instance
+          tenantId: tenantId
+          interfaceName: interfaceName
+          id: id
+          region: region
+          type: connector
+          leftEndpoint: leftEndpoint
+          network: network
+          updatedAt: updatedAt
+        - requestConfigToken: requestConfigToken
+          leftAllowedIP:
+          - leftAllowedIP
+          - leftAllowedIP
+          createdAt: createdAt
+          instance: instance
+          tenantId: tenantId
+          interfaceName: interfaceName
+          id: id
+          region: region
+          type: connector
+          leftEndpoint: leftEndpoint
+          network: network
+          updatedAt: updatedAt
+        createdAt: createdAt
+        tenantId: tenantId
+        id: id
+        region: region
+        imageType: imageType
+        updatedAt: updatedAt
+    NetworkRegion:
+      required:
+      - attributes
+      - createdAt
+      - dns
+      - geoPoint
+      - id
+      - instances
+      - name
+      - network
+      - provider
+      - tenantId
+      type: object
+      properties:
+        network:
+          type: string
+          description: ID of the network.
+        dns:
+          type: string
+          description: DNS of the region.
+        name:
+          type: string
+          description: Name of the network region.
+        instances:
+          type: array
+          description: Network instances.
+          items:
+            $ref: '#/components/schemas/NetworkInstance'
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        createdAt: createdAt
+        instances:
+        - imageVersion: imageVersion
+          resourceId: resourceId
+          instanceType: instanceType
+          ip: ip
+          dns: dns
+          network: network
+          tunnels:
+          - requestConfigToken: requestConfigToken
+            leftAllowedIP:
+            - leftAllowedIP
+            - leftAllowedIP
+            createdAt: createdAt
+            instance: instance
+            tenantId: tenantId
+            interfaceName: interfaceName
+            id: id
+            region: region
+            type: connector
+            leftEndpoint: leftEndpoint
+            network: network
+            updatedAt: updatedAt
+          - requestConfigToken: requestConfigToken
+            leftAllowedIP:
+            - leftAllowedIP
+            - leftAllowedIP
+            createdAt: createdAt
+            instance: instance
+            tenantId: tenantId
+            interfaceName: interfaceName
+            id: id
+            region: region
+            type: connector
+            leftEndpoint: leftEndpoint
+            network: network
+            updatedAt: updatedAt
+          createdAt: createdAt
+          tenantId: tenantId
+          id: id
+          region: region
+          imageType: imageType
+          updatedAt: updatedAt
+        - imageVersion: imageVersion
+          resourceId: resourceId
+          instanceType: instanceType
+          ip: ip
+          dns: dns
+          network: network
+          tunnels:
+          - requestConfigToken: requestConfigToken
+            leftAllowedIP:
+            - leftAllowedIP
+            - leftAllowedIP
+            createdAt: createdAt
+            instance: instance
+            tenantId: tenantId
+            interfaceName: interfaceName
+            id: id
+            region: region
+            type: connector
+            leftEndpoint: leftEndpoint
+            network: network
+            updatedAt: updatedAt
+          - requestConfigToken: requestConfigToken
+            leftAllowedIP:
+            - leftAllowedIP
+            - leftAllowedIP
+            createdAt: createdAt
+            instance: instance
+            tenantId: tenantId
+            interfaceName: interfaceName
+            id: id
+            region: region
+            type: connector
+            leftEndpoint: leftEndpoint
+            network: network
+            updatedAt: updatedAt
+          createdAt: createdAt
+          tenantId: tenantId
+          id: id
+          region: region
+          imageType: imageType
+          updatedAt: updatedAt
+        dns: dns
+        name: name
+        tenantId: tenantId
+        id: id
+        network: network
+        updatedAt: updatedAt
+    Network:
+      required:
+      - accessType
+      - applications
+      - attributes
+      - createdAt
+      - dns
+      - geoPoint
+      - id
+      - isDefault
+      - name
+      - regions
+      - subnet
+      - tags
+      - tenantId
+      type: object
+      properties:
+        dns:
+          type: string
+          description: DNS of the network.
+        subnet:
+          type: string
+          description: Subnet of the network.
+        accessType:
+          type: string
+          enum:
+          - public
+          - private
+        applications:
+          type: array
+          description: List of IDs of assigned applications.
+          items:
+            type: string
+        tags:
+          type: array
+          description: List of network tags.
+          items:
+            type: string
+        name:
+          type: string
+          description: Network name.
+        isDefault:
+          type: boolean
+          description: Indicates that the network is default.
+        regions:
+          type: array
+          description: Network regions list.
+          items:
+            $ref: '#/components/schemas/NetworkRegion'
+        id:
+          type: string
+          description: Unique ID.
+        tenantId:
+          type: string
+          description: ID of the tenant.
+        createdAt:
+          pattern: date-time
+          type: string
+          description: The date when this record was created.
+        updatedAt:
+          pattern: date-time
+          type: string
+          description: The date of last update of the record.
+      example:
+        accessType: public
+        subnet: subnet
+        createdAt: createdAt
+        isDefault: true
+        regions:
+        - createdAt: createdAt
+          instances:
+          - imageVersion: imageVersion
+            resourceId: resourceId
+            instanceType: instanceType
+            ip: ip
+            dns: dns
+            network: network
+            tunnels:
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            createdAt: createdAt
+            tenantId: tenantId
+            id: id
+            region: region
+            imageType: imageType
+            updatedAt: updatedAt
+          - imageVersion: imageVersion
+            resourceId: resourceId
+            instanceType: instanceType
+            ip: ip
+            dns: dns
+            network: network
+            tunnels:
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            createdAt: createdAt
+            tenantId: tenantId
+            id: id
+            region: region
+            imageType: imageType
+            updatedAt: updatedAt
+          dns: dns
+          name: name
+          tenantId: tenantId
+          id: id
+          network: network
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          instances:
+          - imageVersion: imageVersion
+            resourceId: resourceId
+            instanceType: instanceType
+            ip: ip
+            dns: dns
+            network: network
+            tunnels:
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            createdAt: createdAt
+            tenantId: tenantId
+            id: id
+            region: region
+            imageType: imageType
+            updatedAt: updatedAt
+          - imageVersion: imageVersion
+            resourceId: resourceId
+            instanceType: instanceType
+            ip: ip
+            dns: dns
+            network: network
+            tunnels:
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            - requestConfigToken: requestConfigToken
+              leftAllowedIP:
+              - leftAllowedIP
+              - leftAllowedIP
+              createdAt: createdAt
+              instance: instance
+              tenantId: tenantId
+              interfaceName: interfaceName
+              id: id
+              region: region
+              type: connector
+              leftEndpoint: leftEndpoint
+              network: network
+              updatedAt: updatedAt
+            createdAt: createdAt
+            tenantId: tenantId
+            id: id
+            region: region
+            imageType: imageType
+            updatedAt: updatedAt
+          dns: dns
+          name: name
+          tenantId: tenantId
+          id: id
+          network: network
+          updatedAt: updatedAt
+        dns: dns
+        name: name
+        tenantId: tenantId
+        id: id
+        applications:
+        - applications
+        - applications
+        tags:
+        - tags
+        - tags
+        updatedAt: updatedAt
+    CreateNetworkPayload:
+      required:
+      - name
+      type: object
+      properties:
+        subnet:
+          maxLength: 20
+          type: string
+          description: Subnet of the network.
+        name:
+          type: string
+          description: Network name.
+        tags:
+          type: array
+          description: List of network tags.
+          items:
+            type: string
+    CreateRegionPayload:
+      properties:
+        regionId:
+          type: string
+          description: Region ID.
+      example:
+        regionId: regionId
+    CreateRegionInNetworkload:
+      required:
+      - idle
+      - instanceCount
+      - regionId
+      type: object
+      properties:
+        gcregionId:
+          type: string
+          description: cpRegion ID.
+        instanceCount:
+          maximum: 20
+          minimum: 1
+          type: integer
+          description: Desired number of instances in region.
+        idle:
+          type: boolean
+          description: Create the gateway as disabled if true.
+          default: false
+    UpdateNetworkDto:
+      required:
+      - network
+      type: object
+      properties:
+        network:
+          $ref: '#/components/schemas/BaseNetworkDto'
+    BaseNetworkDto:
+      properties:
+        name:
+          type: string
+          description: Network name
+        tags:
+          type: array
+          description: List of network tags
+          items:
+            type: string
+    OpenVPNTunnel:
+      type: object
+      properties:
+        tunnelID:
+          type: string
+        type:
+          type: string
+          default: OpenVPN
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        accessKeyId:
+          type: string
+        secretAccessKey:
+          type: string
+      example:
+        accessKeyId: accessKeyId
+        secretAccessKey: secretAccessKey
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        tunnelID: tunnelID
+        type: OpenVPN
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      allOf:
+      - $ref: '#/components/schemas/BaseTunnelValues'
+    WireguardTunnel:
+      allOf:
+      - $ref: '#/components/schemas/WireGuradDetails'
+      - $ref: '#/components/schemas/BaseTunnelValues'
+      - type: object
+        properties:
+          tunnelID:
+            type: string
+          type:
+            type: string
+            default: wireguard
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+    CreateWireguardTunnelPayload:
+      allOf:
+      - $ref: '#/components/schemas/WireGuradDetails'
+      - $ref: '#/components/schemas/BaseTunnelValues'
+    WireGuradDetails:
+      type: object
+      properties:
+        remoteEndpoint:
+          $ref: '#/components/schemas/IP'
+        remoteSubnets:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+    CreateIPSecSinglePayload:
+      required:
+      - dpdDelay
+      - dpdTimeout
+      - gatewayID
+      - ikeLifeTime
+      - lifetime
+      - p81GatewaySubnets
+      - passphrase
+      - phase1
+      - phase2
+      - regionID
+      - remoteGatewaySubnets
+      - remotePublicIP
+      - tunnelName
+      allOf:
+      - $ref: '#/components/schemas/BaseTunnelValues'
+      - $ref: '#/components/schemas/IPSecSharedSettings'
+      - $ref: '#/components/schemas/IPSecSingleDetails'
+    IPSecSingleDetails:
+      allOf:
+      - $ref: '#/components/schemas/IPSecAdvancedSettings'
+      - $ref: '#/components/schemas/IPSecSharedSettings'
+      - type: object
+        properties:
+          passphrase:
+            $ref: '#/components/schemas/Passphrase'
+          remotePublicIP:
+            $ref: '#/components/schemas/IP'
+          remoteID:
+            oneOf:
+            - $ref: '#/components/schemas/IP'
+            - pattern: "^[a-zA-Z0-9]{3,25}$"
+              type: string
+          phase1:
+            $ref: '#/components/schemas/IPSecPhase'
+          phase2:
+            $ref: '#/components/schemas/IPSecPhase'
+    IPSecSingleTunnel:
+      type: object
+      properties:
+        tunnelID:
+          type: string
+      example:
+        tunnelID: tunnelID
+      allOf:
+      - $ref: '#/components/schemas/BaseTunnelValues'
+      - $ref: '#/components/schemas/IPSecSharedSettings'
+      - $ref: '#/components/schemas/IPSecSingleDetails'
+      - type: object
+        properties:
+          type:
+            type: string
+            default: ipsec
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+    IPSecRedundantTunnels:
+      type: object
+      properties:
+        tunnelName:
+          $ref: '#/components/schemas/TunnelName'
+        regionID:
+          type: string
+        tunnel1:
+          $ref: '#/components/schemas/IPSecRedundantTunnel'
+        tunnel2:
+          $ref: '#/components/schemas/IPSecRedundantTunnel'
+        sharedSettings:
+          $ref: '#/components/schemas/IPSecSharedSettings'
+        advancedSettings:
+          $ref: '#/components/schemas/IPSecAdvancedSettings'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        tunnel2: null
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        tunnel1: ""
+        regionID: regionID
+        advancedSettings:
+          ikeLifeTime: ikeLifeTime
+          phase1:
+            encryption:
+            - md5
+            - md5
+            dh:
+            - 0
+            - 0
+            auth:
+            - 3des
+            - 3des
+          phase2: null
+          dpdTimeout: null
+          lifetime: null
+          dpdDelay: dpdDelay
+          keyExchange: ikev1
+        sharedSettings:
+          p81GatewaySubnets:
+          - p81GatewaySubnets
+          - p81GatewaySubnets
+          remoteGatewaySubnets:
+          - remoteGatewaySubnets
+          - remoteGatewaySubnets
+        tunnelName: tunnelName
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+    IPSecRedundantTunnel:
+      allOf:
+      - $ref: '#/components/schemas/IPSecRedundantTunnelPayload'
+      - type: object
+        properties:
+          tunnelID:
+            type: string
+    UpdateIPSecRedundantPayload:
+      type: object
+      properties:
+        tunnel1:
+          $ref: '#/components/schemas/IPSecRedundantTunnelDetails'
+        tunnel2:
+          $ref: '#/components/schemas/IPSecRedundantTunnelDetails'
+        sharedSettings:
+          $ref: '#/components/schemas/IPSecSharedSettings'
+        advancedSettings:
+          $ref: '#/components/schemas/IPSecAdvancedSettings'
+    CreateIPSecRedundantPayload:
+      type: object
+      properties:
+        tunnelName:
+          $ref: '#/components/schemas/TunnelName'
+        regionID:
+          type: string
+        tunnel1:
+          $ref: '#/components/schemas/IPSecRedundantTunnelPayload'
+        tunnel2:
+          $ref: '#/components/schemas/IPSecRedundantTunnelPayload'
+        sharedSettings:
+          $ref: '#/components/schemas/IPSecSharedSettings'
+        advancedSettings:
+          $ref: '#/components/schemas/IPSecAdvancedSettings'
+    IPSecRedundantTunnelPayload:
+      allOf:
+      - $ref: '#/components/schemas/IPSecRedundantTunnelDetails'
+      - type: object
+        properties:
+          gatewayID:
+            type: string
+    IPSecRedundantTunnelDetails:
+      type: object
+      properties:
+        passphrase:
+          $ref: '#/components/schemas/Passphrase'
+        p81GWinternalIP:
+          $ref: '#/components/schemas/IP'
+        remoteGWinernalIP:
+          $ref: '#/components/schemas/IP'
+        remotePublicIP:
+          $ref: '#/components/schemas/IP'
+        remoteASN:
+          $ref: '#/components/schemas/ASN'
+        remoteID:
+          type: string
+    IPSecPhase:
+      type: object
+      properties:
+        auth:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            enum:
+            - 3des
+            - aec256
+            - blowfish128
+            - blowfish192
+            - blowfish256
+            - aes128
+            - aes192
+        encryption:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            enum:
+            - md5
+            - sha1
+            - sha384
+            - sha256
+            - sha512
+        dh:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          description: Diffie Helman encryption
+          items:
+            type: integer
+            enum:
+            - 2
+            - 5
+            - 14
+            - 19
+            - 20
+            - 21
+      example:
+        encryption:
+        - md5
+        - md5
+        dh:
+        - 0
+        - 0
+        auth:
+        - 3des
+        - 3des
+    IPSecAdvancedSettings:
+      type: object
+      properties:
+        keyExchange:
+          type: string
+          enum:
+          - ikev1
+          - ikev2
+        ikeLifeTime:
+          $ref: '#/components/schemas/Lifetime'
+        lifetime:
+          $ref: '#/components/schemas/Lifetime'
+        dpdDelay:
+          $ref: '#/components/schemas/DPDTime'
+        dpdTimeout:
+          $ref: '#/components/schemas/DPDTime'
+        phase1:
+          $ref: '#/components/schemas/IPSecPhase'
+        phase2:
+          $ref: '#/components/schemas/IPSecPhase'
+      example:
+        ikeLifeTime: ikeLifeTime
+        phase1:
+          encryption:
+          - md5
+          - md5
+          dh:
+          - 0
+          - 0
+          auth:
+          - 3des
+          - 3des
+        phase2: null
+        dpdTimeout: null
+        lifetime: null
+        dpdDelay: dpdDelay
+        keyExchange: ikev1
+    Passphrase:
+      pattern: "^[a-zA-Z1-9._][a-zA-Z0-9._]{7,63}$"
+      type: string
+    DPDTime:
+      pattern: "^([5-9]|[1-5][0-9]|60)s$"
+      type: string
+    Lifetime:
+      pattern: "^((1[0-9]|[2-9][0-9]|[1-9][0-9]{2,3}|[1-7][0-9]{4}|8[0-5][0-9]{3}|86[0-3][0-9]{2}|86400)s)\
+        \ | (([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|1[0-3][0-9][0-9]|14[0-3][0-9]|1440)m)\
+        \ | ((1[0-9]|2[0-4])h)$"
+      type: string
+    ASN:
+      maximum: 65534
+      minimum: 64510
+      type: number
+    IPSecSharedSettings:
+      type: object
+      properties:
+        p81GatewaySubnets:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        remoteGatewaySubnets:
+          minLength: 1
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+      example:
+        p81GatewaySubnets:
+        - p81GatewaySubnets
+        - p81GatewaySubnets
+        remoteGatewaySubnets:
+        - remoteGatewaySubnets
+        - remoteGatewaySubnets
+    BaseTunnelValues:
+      required:
+      - gatewayID
+      - regionID
+      - tunnelName
+      type: object
+      properties:
+        regionID:
+          type: string
+          description: Region ID
+        gatewayID:
+          type: string
+          description: Gatwway ID
+        tunnelName:
+          $ref: '#/components/schemas/TunnelName'
+    IP:
+      type: string
+      format: ipv4
+    TunnelName:
+      maxLength: 15
+      minLength: 3
+      type: string
+      description: The name of the tunnel
+    inline_response_200:
+      type: object
+      properties:
+        name:
+          type: string
+      example:
+        name: name
+  responses:
+    "202":
+      description: Request accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AsyncOperationResponse'
+    "401":
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    "402":
+      description: Insufficient licenses
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    "403":
+      description: forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    "404":
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    "422":
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    networkIdParam:
+      name: networkId
+      in: path
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+    tunnelIdParam:
+      name: tunnelId
+      in: path
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
