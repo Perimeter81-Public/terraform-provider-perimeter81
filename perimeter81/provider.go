@@ -46,10 +46,10 @@ func providerConfigure(con context.Context, d *schema.ResourceData) (interface{}
 	// })
 
 	if client == nil {
-		log.Println("[ERROR] Initializing postmark client is not completed")
+		log.Println("[ERROR] Initializing Preimeter81 client is not completed")
 		return nil, nil
 	}
-	log.Println("[INFO] Initializing postmark client")
+	log.Println("[INFO] Initializing Preimeter81 client")
 
 	return client, nil
 }
