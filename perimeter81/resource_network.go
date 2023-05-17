@@ -3,7 +3,7 @@ package perimeter81
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"strings"
 	perimeter81Sdk "terraform-provider-perimeter81/perimeter81sdk"
 	"time"
 
@@ -32,6 +32,7 @@ func resourceNetwork() *schema.Resource {
 						"subnet": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"name": {
 							Type:     schema.TypeString,
@@ -92,7 +93,7 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 		Regions: regions,
 	}
 
-	_, _, err := client.NetworksApi.NetworksControllerV2NetworkCreate(ctx, DeployNetworkPayload)
+	status, _, err := client.NetworksApi.NetworksControllerV2NetworkCreate(ctx, DeployNetworkPayload)
 	if err != nil {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -101,7 +102,28 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 		})
 	}
 
-	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
+	statusUrl := strings.Split(status.StatusUrl, "/")
+	statusId := statusUrl[len(statusUrl)-1]
+
+	var networkId string
+	for {
+		networkStatus, _, err := client.NetworksApi.NetworksControllerV2Status(ctx, statusId)
+		if err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to get Network Status",
+				Detail:   err.Error(),
+			})
+		}
+		if networkStatus.Completed {
+			networkUrl := strings.Split(networkStatus.Result.Resource, "/")
+			networkId = networkUrl[len(networkUrl)-1]
+			break
+		}
+		time.Sleep(60 * time.Second)
+	}
+
+	d.SetId(networkId)
 
 	return diags
 }
@@ -111,7 +133,7 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	networkId := "qsA9LEHRO6" //TODO: get network id from d.Id()
+	networkId := d.Id()
 	network, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
 
 	if err != nil {
@@ -139,7 +161,7 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	}
 
 	if d.HasChange("network") {
-		networkId := "qsA9LEHRO6" //TODO: get network id from d.Id()
+		networkId := d.Id()
 		network := d.Get("network").([]interface{})[0].(map[string]interface{})
 		name := network["name"].(string)
 		tags := flattenTagsData(network["tags"].([]interface{}))
@@ -159,22 +181,18 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	return resourceNetworkRead(ctx, d, m)
 }
 func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	fmt.Println("resourceNetworkDelete")
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	fmt.Println(client)
 	networkId := d.Id()
-	fmt.Println(networkId)
-	// _, _, err := client.NetworksApi.NetworksControllerV2NetworkDelete(ctx, networkId)
+	_, _, err := client.NetworksApi.NetworksControllerV2NetworkDelete(ctx, networkId)
 
-	// if err != nil {
-	// 	return diag.FromErr(err)
-	// }
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	d.SetId("")
-	fmt.Println("resourceNetworkDelete destroied")
 
 	return diags
 }

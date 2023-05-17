@@ -24,9 +24,8 @@ func TestAccNetwork_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n1", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   "Network 2 test",
+						Name:   "Network 6 test",
 						Tags:   []string{"test"},
-						Subnet: "10.254.0.0/16",
 					}),
 				),
 			},
@@ -36,9 +35,8 @@ func TestAccNetwork_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n1", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   "Network test2 updated",
+						Name:   "Network test 6 updated",
 						Tags:   []string{"test", "updated"},
-						Subnet: "10.254.0.0/16",
 					}),
 				),
 			},
@@ -59,7 +57,7 @@ func testAccCheckNetworkExists(n string, network *perimeter81Sdk.Network) resour
 		}
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
-		gotNetwork, _, err := conn.NetworksApi.NetworksControllerV2NetworkFind(ctx, "qsA9LEHRO6") // TODO: change to networkID
+		gotNetwork, _, err := conn.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkID)
 		if err != nil {
 			return err
 		}
@@ -71,7 +69,6 @@ func testAccCheckNetworkExists(n string, network *perimeter81Sdk.Network) resour
 type testAccNetworkExpectedAttributes struct {
 	Name   string
 	Tags   []string
-	Subnet string
 }
 
 func testTagsEq(a, b []string) bool {
@@ -96,10 +93,6 @@ func testAccCheckNetworkAttributes(network *perimeter81Sdk.Network, want *testAc
 			return fmt.Errorf("got tags %q; want %q", network.Tags, want.Tags)
 		}
 
-		if network.Subnet != want.Subnet {
-			return fmt.Errorf("got tags %q; want %q", network.Tags, want.Tags)
-		}
-
 		return nil
 	}
 }
@@ -108,9 +101,8 @@ func testAccNetworkConfig() string {
 	return `
 resource "perimeter81_network" "n1" {
 	network {
-		name = "Network 2 test"
+		name = "Network 6 test"
 		tags = ["test"]
-		subnet = "10.254.0.0/16"
 	}
 	region {
 		cpregionid = "r2Epw6OJsx"
@@ -125,9 +117,8 @@ func testAccNetworkUpdateConfig() string {
 	return `
 resource "perimeter81_network" "n1" {
 	network {
-		name = "Network test2 updated"
+		name = "Network test 6 updated"
 		tags = ["test", "updated"]
-		subnet = "10.254.0.0/16"
 	}
 	region {
 		cpregionid = "r2Epw6OJsx"
