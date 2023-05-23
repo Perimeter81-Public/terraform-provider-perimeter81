@@ -18,25 +18,23 @@ func TestAccNetwork_basic(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			// Create a server
 			{
 				Config: testAccNetworkConfig(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n1", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   "Network 6 test",
-						Tags:   []string{"test"},
+						Name: "Network test",
+						Tags: []string{"test"},
 					}),
 				),
 			},
-			// Update the server to change the name and color
 			{
 				Config: testAccNetworkUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n1", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   "Network test 6 updated",
-						Tags:   []string{"test", "updated"},
+						Name: "Network test updated",
+						Tags: []string{"test", "updated"},
 					}),
 				),
 			},
@@ -67,8 +65,8 @@ func testAccCheckNetworkExists(n string, network *perimeter81Sdk.Network) resour
 }
 
 type testAccNetworkExpectedAttributes struct {
-	Name   string
-	Tags   []string
+	Name string
+	Tags []string
 }
 
 func testTagsEq(a, b []string) bool {
@@ -101,7 +99,7 @@ func testAccNetworkConfig() string {
 	return `
 resource "perimeter81_network" "n1" {
 	network {
-		name = "Network 6 test"
+		name = "Network test"
 		tags = ["test"]
 	}
 	region {
@@ -117,7 +115,7 @@ func testAccNetworkUpdateConfig() string {
 	return `
 resource "perimeter81_network" "n1" {
 	network {
-		name = "Network test 6 updated"
+		name = "Network test updated"
 		tags = ["test", "updated"]
 	}
 	region {
