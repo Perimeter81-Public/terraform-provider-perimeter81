@@ -33,6 +33,81 @@ description: |-
 
 - `id` (String) The ID of this resource.
 
+### Example
+
+```terraform
+ resource "perimeter81_network" "n1" {
+   network {
+     name = "network-test",
+     tags = ["test"]
+   }
+   region {
+     cpregion_id = "v2cRwzGRua"
+     instance_count = 2
+     idle = true
+   }
+ }
+
+data "perimeter81_networks" "all" {
+    depends_on = [
+        perimeter81_network.n1
+    ]
+}
+
+resource "perimeter81_ipsec_redundant" "ipsr1" {
+  region_id = perimeter81_network.n1.region[0].region_id
+  network_id = perimeter81_network.n1.id
+  tunnel_name = "ipseed"
+  tunnel1 {
+      passphrase = "aXvgHEYt"
+      p81_gwinternal_ip = "169.254.100.19"
+      remote_gwinternal_ip = "169.254.100.5"
+      remote_public_ip = "169.254.100.7"
+      remote_id = "169.254.100.7"
+      remote_asn = 65323
+      gateway_id = {
+        for network in data.perimeter81_networks.all.networks :
+        network.id => network.regions[0].instances[0].id
+        if network.id == perimeter81_network.n1.id
+      }[perimeter81_network.n1.id]
+  }
+  tunnel2 {
+      passphrase = "Sg4gKHtT"
+      p81_gwinternal_ip = "169.254.100.10"
+      remote_gwinternal_ip = "169.254.100.14"
+      remote_public_ip = "169.254.100.16"
+      remote_id = "169.254.100.16"
+      remote_asn = 65324
+      gateway_id = {
+        for network in data.perimeter81_networks.all.networks :
+        network.id => network.regions[0].instances[1].id
+        if network.id == perimeter81_network.n1.id
+      }[perimeter81_network.n1.id]
+  }
+  shared_settings {
+    p81_gateway_subnets = ["0.0.0.0/0"]
+    remote_gateway_subnets = ["0.0.0.0/0"]
+  }
+  advanced_settings {
+    key_exchange = "ikev2"
+    ike_life_time = "8h"
+    lifetime = "1h"
+    dpd_delay = "10s"
+    dpd_timeout = "30s"
+    phase1 {
+      auth = ["3des"]
+      encryption = ["sha256"]
+      dh = [14]
+    }
+    phase2 {
+      auth = ["3des"]
+      encryption = ["sha256"]
+      dh = [14]
+    }
+  }
+}
+```
+
 <a id="nestedblock--advanced_settings"></a>
 ### Nested Schema for `advanced_settings`
 

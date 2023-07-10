@@ -28,6 +28,27 @@ description: |-
 
 - `id` (String) The ID of this resource.
 
+### Example
+
+```terraform
+ resource "perimeter81_network" "n1" {
+   network {
+     name = "network-test",
+     tags = ["test"]
+   }
+   region {
+     cpregion_id = "v2cRwzGRua"
+     instance_count = 1
+     idle = true
+   }
+   region {
+     cpregion_id = "F2w4QTggWt"
+     instance_count = 1
+     idle = true
+   }
+ }
+```
+
 <a id="nestedblock--region"></a>
 ### Nested Schema for `region`
 

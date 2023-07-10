@@ -44,6 +44,57 @@ description: |-
 
 - `id` (String) The ID of this resource.
 
+### Example
+
+```terraform
+ resource "perimeter81_network" "n1" {
+   network {
+     name = "network-test",
+     tags = ["test"]
+   }
+   region {
+     cpregion_id = "v2cRwzGRua"
+     instance_count = 1
+     idle = true
+   }
+ }
+
+data "perimeter81_networks" "all" {
+    depends_on = [
+        perimeter81_network.n1
+    ]
+}
+resource "perimeter81_ipsec_single" "ipss1" {
+  region_id = perimeter81_network.n1.region[0].region_id
+  gateway_id = {
+        for network in data.perimeter81_networks.all.networks :
+        network.id => network.regions[0].instances[0].id
+        if network.id == perimeter81_network.n1.id
+    }[perimeter81_network.n1.id]
+  network_id = perimeter81_network.n1.id
+  tunnel_name = "Sec1"
+  p81_gateway_subnets = ["0.0.0.0/0"]
+  remote_gateway_subnets = ["0.0.0.0/0"]
+  key_exchange = "ikev1"
+  ike_life_time = "9h"
+  lifetime = "2h"
+  dpd_delay = "20s"
+  dpd_timeout = "40s"
+  phase1 {
+    auth = ["3des"]
+    encryption = ["sha256"]
+    dh = [14]
+  }
+  phase2 {
+    auth = ["3des"]
+    encryption = ["sha256"]
+    dh = [14]
+  }
+  passphrase = "tnEgVbTJE23"
+  remote_public_ip = "198.51.100.41"
+}
+```
+
 <a id="nestedblock--phase1"></a>
 ### Nested Schema for `phase1`
 

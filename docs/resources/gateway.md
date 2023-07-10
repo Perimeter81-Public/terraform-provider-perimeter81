@@ -29,6 +29,38 @@ description: |-
 
 - `id` (String) The ID of this resource.
 
+### Example
+
+```terraform
+ resource "perimeter81_network" "n1" {
+   network {
+     name = "network-test",
+     tags = ["test"]
+   }
+   region {
+     cpregion_id = "v2cRwzGRua"
+     instance_count = 1
+     idle = true
+   }
+ }
+
+ resource "perimeter81_gateway"  "g1"{
+
+  gateways {
+      name = "gateway1"
+      idle = false
+  }
+
+  gateways {
+      name = "gateway2"
+      idle = true
+  }
+
+  network_id = perimeter81_network.n1.id
+  region_id = perimeter81_network.n1.region[0].region_id
+}
+```
+
 <a id="nestedblock--gateways"></a>
 ### Nested Schema for `gateways`
 

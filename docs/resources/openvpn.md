@@ -21,7 +21,7 @@ description: |-
 - `network_id` (String)
 - `region_id` (String)
 - `tunnel_name` (String)
-- `version` (Number)
+- `version` (Number) change it when you want to change the secret_access_key
 
 ### Optional
 
@@ -35,3 +35,36 @@ description: |-
 - `access_key_id` (String)
 - `id` (String) The ID of this resource.
 - `secret_access_key` (String, Sensitive)
+
+### Example
+
+```terraform
+ resource "perimeter81_network" "n1" {
+   network {
+     name = "network-test",
+     tags = ["test"]
+   }
+   region {
+     cpregion_id = "v2cRwzGRua"
+     instance_count = 1
+     idle = true
+   }
+ }
+
+data "perimeter81_networks" "all" {
+    depends_on = [
+        perimeter81_network.n1
+    ]
+}
+ resource "perimeter81_openvpn" "ovpn1" { 
+    network_id = perimeter81_network.n1.id
+    region_id = perimeter81_network.n1.region[0].region_id
+    gateway_id = {
+        for network in data.perimeter81_networks.all.networks :
+        network.id => network.regions[0].instances[0].id
+        if network.id == perimeter81_network.n1.id
+    }[perimeter81_network.n1.id]
+    tunnel_name = "OpenVPNTunnel6"
+    version = 2
+ }
+```
