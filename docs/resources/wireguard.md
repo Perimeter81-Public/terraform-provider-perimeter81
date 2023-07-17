@@ -27,7 +27,6 @@ description: |-
 ### Optional
 
 - `created_at` (String)
-- `last_updated` (String)
 - `updated_at` (String)
 
 ### Read-Only

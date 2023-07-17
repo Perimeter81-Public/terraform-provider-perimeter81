@@ -20,6 +20,12 @@ description: |-
 - `id` (String) The ID of this resource.
 - `networks` (List of Object) (see [below for nested schema](#nestedatt--networks))
 
+### Example
+
+```terraform
+ data "perimeter81_networks" "all" {}
+```
+
 <a id="nestedatt--networks"></a>
 ### Nested Schema for `networks`
 

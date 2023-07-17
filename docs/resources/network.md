@@ -21,7 +21,6 @@ description: |-
 
 ### Optional
 
-- `last_updated` (String)
 - `network` (Block List) (see [below for nested schema](#nestedblock--network))
 
 ### Read-Only
@@ -54,13 +53,12 @@ description: |-
 
 Required:
 
-- `cpregion_id` (String)
-- `instance_count` (Number)
+- `cpregion_id` (String) General ID that uniquely identifies the region across all regions can be found from the regions datasource.
+- `instance_count` (Number) Number of instances that will be created for a specified region inside the network.
 
 Optional:
 
-- `idle` (Boolean)
-- `region_id` (String)
+- `idle` (Boolean) either the gateway is idel or not
 
 
 <a id="nestedblock--network"></a>
@@ -68,9 +66,9 @@ Optional:
 
 Required:
 
-- `name` (String)
+- `name` (String) The name of the Resource
 
 Optional:
 
-- `subnet` (String)
-- `tags` (List of String)
+- `subnet` (String) Subnet to associate
+- `tags` (List of String) List of tags for the network Resource

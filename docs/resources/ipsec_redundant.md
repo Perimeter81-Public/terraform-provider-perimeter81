@@ -25,10 +25,6 @@ description: |-
 - `tunnel2` (Block List, Min: 1) (see [below for nested schema](#nestedblock--tunnel2))
 - `tunnel_name` (String)
 
-### Optional
-
-- `last_updated` (String)
-
 ### Read-Only
 
 - `id` (String) The ID of this resource.

@@ -20,6 +20,12 @@ description: |-
 - `id` (String) The ID of this resource.
 - `regions` (List of Object) (see [below for nested schema](#nestedatt--regions))
 
+### Example
+
+```terraform
+ data "perimeter81_regions" "all" {}
+```
+
 <a id="nestedatt--regions"></a>
 ### Nested Schema for `regions`
 

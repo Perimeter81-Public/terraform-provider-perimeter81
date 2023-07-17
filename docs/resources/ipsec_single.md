@@ -36,7 +36,6 @@ description: |-
 ### Optional
 
 - `created_at` (String)
-- `last_updated` (String)
 - `remote_id` (String)
 - `updated_at` (String)
 

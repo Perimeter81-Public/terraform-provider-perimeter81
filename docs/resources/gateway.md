@@ -17,13 +17,12 @@ description: |-
 
 ### Required
 
-- `network_id` (String)
-- `region_id` (String)
+- `network_id` (String) the network id that has this gateway.
+- `region_id` (String) the region id in this network that we want to create this gateway in.
 
 ### Optional
 
 - `gateways` (Block List) (see [below for nested schema](#nestedblock--gateways))
-- `last_updated` (String)
 
 ### Read-Only
 
@@ -66,8 +65,8 @@ description: |-
 
 Required:
 
-- `idle` (Boolean)
-- `name` (String)
+- `idle` (Boolean) the gateway either idel or not
+- `name` (String) should be unique
 
 Read-Only:
 
