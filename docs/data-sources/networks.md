@@ -31,65 +31,66 @@ description: |-
 
 Read-Only:
 
-- `accesstype` (String)
-- `applications` (List of String)
-- `createdat` (String)
-- `dns` (String)
-- `id` (String)
-- `isdefault` (Boolean)
-- `name` (String)
+- `accesstype` (String)  The access type of the network resource. (private or public)
+- `applications` (List of String) The list of applications that are associated with a network resource
+- `createdat` (String) The creation date of the network datasource.
+- `dns` (String) the DNS name of the network resource
+- `id` (String) The ID of the datasource
+- `isdefault` (Boolean) Whether a network resource is a default or not
+- `name` (String) The name of the network resource
 - `regions` (List of Object) (see [below for nested schema](#nestedobjatt--networks--regions))
-- `subnet` (String)
-- `tags` (List of String)
-- `tenantid` (String)
-- `updatedat` (String)
+- `subnet` (String) The subnet of a network resource
+- `tags` (List of String) The list of tags associated with a network resource
+- `tenantid` (String) The tenant id associated with a network resource
+- `updatedat` (String) The update date of the network datasource
 
 <a id="nestedobjatt--networks--regions"></a>
 ### Nested Schema for `networks.regions`
 
 Read-Only:
 
-- `createdat` (String)
-- `dns` (String)
-- `id` (String)
+- `createdat` (String) The creation date of the region.
+- `dns` (String) The DNS name of the region
+- `id` (String) The region id of the region associated with a network (Not general)
 - `instances` (List of Object) (see [below for nested schema](#nestedobjatt--networks--regions--instances))
-- `name` (String)
-- `network` (String)
-- `tenantid` (String)
-- `updatedat` (String)
+- `name` (String) The name of the region
+- `network` (String) The network id that contains this region
+- `tenantid` (String) The tenant id associated with a region
+- `updatedat` (String) The update date of the region
 
 <a id="nestedobjatt--networks--regions--instances"></a>
 ### Nested Schema for `networks.regions.instances`
 
 Read-Only:
 
-- `createdat` (String)
-- `dns` (String)
-- `id` (String)
-- `imagetype` (String)
-- `imageversion` (String)
-- `instancetype` (String)
-- `ip` (String)
-- `network` (String)
-- `region` (String)
-- `tenantid` (String)
+- `createdat` (String) The creation date of the instance (gateway).
+- `dns` (String) The DNS name of the instance (gateway).
+- `id` (String) The id of the instance (gateway) associated with a region inside a network resource
+- `imagetype` (String) The image type of the instance (gateway)
+- `imageversion` (String) The image version of the instance (gateway)
+- `instancetype` (String)  The instance (gateway) type
+- `ip` (String) The ip address of the instance (gateway)
+- `network` (String) The network id that contains this region
+- `region` (String) The region id that contains this instance (gateway)
+- `tenantid` (String) The tenant id associated with a instance (gateway)
 - `tunnels` (List of Object) (see [below for nested schema](#nestedobjatt--networks--regions--instances--tunnels))
-- `updatedat` (String)
+- `updatedat` (String) The update date of the instance (gateway)
 
 <a id="nestedobjatt--networks--regions--instances--tunnels"></a>
 ### Nested Schema for `networks.regions.instances.updatedat`
 
 Read-Only:
 
-- `createdat` (String)
-- `id` (String)
-- `instance` (String)
-- `interfacename` (String)
-- `leftallowedip` (List of String)
-- `leftendpoint` (String)
-- `network` (String)
-- `region` (String)
-- `requestconfigtoken` (String)
-- `tenantid` (String)
-- `type` (String)
-- `updatedat` (String)
+- `createdat` (String) The creation date of the tunnel.
+- `id` (String) The id of the tunnel that associated with the instance (gateway) that is associated with a region inside a network resource
+- `instance` (String) The id of the instance (gateway) that has this tunnel
+- `interfacename` (String) The name of the tunnel
+- `leftallowedip` (List of String) List of allowed ips
+- `leftendpoint` (String) list of lefted endpoint
+- `network` (String) The network id that has this tunnel
+- `region` (String) The region that has this tunnel
+- `requestconfigtoken` (String) The request config token for the Wireguard tunnel
+- `isHA` (Boolean) Whether the tunnel redundant or not
+- `tenantid` (String) The tenant id associated with a tunnel
+- `type` (String) Whether it is connector, ipsec, openvpn or wireguard
+- `updatedat` (String) The update date of the tunnel

@@ -31,10 +31,10 @@ description: |-
 
 Read-Only:
 
-- `class_name` (String)
-- `continent_code` (String)
-- `country_code` (String)
-- `display_name` (String)
-- `id` (String)
-- `name` (String)
-- `object_id` (String)
+- `class_name` (String) It will contain the class name of the data source which is CPRegion
+- `continent_code` (String) It will contain the continent code of the region example: NA (North America)
+- `country_code` (String)  It will contain the country code of the region example: US (United States)
+- `display_name` (String) It will contain the display name of the region example: Sydney 1
+- `id` (String) cpregion_id that identifies the regions
+- `name` (String) It will contain the display name of the region example: Sydney
+- `object_id` (String) cpregion_id that identifies the regions
