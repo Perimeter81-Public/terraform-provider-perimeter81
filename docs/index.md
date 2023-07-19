@@ -26,6 +26,6 @@ description: |-
 ```terraform
   provider "perimeter81" {
     api_key = "abcdefgh123456789"
-    base_url = "https://api.perimeter81.biz/api/rest"
+    base_url = "https://api.perimeter81.com/api/rest"
   }
 ```
