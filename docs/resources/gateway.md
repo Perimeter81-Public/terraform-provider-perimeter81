@@ -29,7 +29,7 @@ description: |-
 ```terraform
  resource "perimeter81_network" "n1" {
    network {
-     name = "network-test",
+     name = "network-test"
      tags = ["test"]
    }
    region {
