@@ -2,6 +2,7 @@ package perimeter81
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
@@ -79,7 +80,30 @@ func resourceNetwork() *schema.Resource {
 				},
 			},
 		},
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceNetworkImportState,
+		},
 	}
+}
+
+/*
+resourceNetworkImportState Import a Network
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return []*schema.ResourceData, error
+*/
+func resourceNetworkImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	diagnostics := resourceNetworkRead(ctx, d, m)
+	if diagnostics.HasError() {
+		for _, diagnostic := range diagnostics {
+			if diagnostic.Severity == diag.Error {
+				return nil, fmt.Errorf("could not import network: %s, \n %s", diagnostic.Summary, diagnostic.Detail)
+			}
+		}
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 /*
