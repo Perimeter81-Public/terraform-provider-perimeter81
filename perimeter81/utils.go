@@ -754,3 +754,32 @@ func regionClonsInArray(regionId string, regions []perimeter81Sdk.CreateRegionIn
 	}
 	return clons
 }
+
+/*
+importRegions import the manually added regions 
+  - @param networkData perimeter81Sdk.Network - the network data
+  - @param regionsData perimeter81Sdk.RegionsList - the regions date list
+  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions inside the configuration file if exists
+
+@return []perimeter81Sdk.CreateRegionInNetworkload - the result
+
+ */
+func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sdk.RegionsList, regions []perimeter81Sdk.CreateRegionInNetworkload) []perimeter81Sdk.CreateRegionInNetworkload {
+	if len(regions) == 0 {
+		regions = make([]perimeter81Sdk.CreateRegionInNetworkload, len(networkData.Regions))
+		for i, regionItem := range networkData.Regions {
+			region := perimeter81Sdk.CreateRegionInNetworkload{}
+			region.InstanceCount = int32(len(regionItem.Instances))
+			region.Idle = networkData.IsDefault
+			region.RegionID = regionItem.Id
+			for _, regionInfo := range regionsData.Regions {
+				if regionInfo.DisplayName == regionItem.Name {
+					region.CpRegionId = regionInfo.Id
+					break
+				}
+			}
+			regions[i] = region
+		}
+	}
+	return regions
+}

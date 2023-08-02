@@ -180,10 +180,12 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 		return appendErrorDiags(diags, "Unable to get CpRegions", err)
 	}
 
-	// flatten the regions data and set the network region ids
+	// handle regions terraform import
 	regions := flattenRegionsData(d.Get("region").([]interface{}))
-	setNetworkRegionIds(regionsData, networkData, regions)
+	regions = importRegions(networkData, regionsData, regions)
 
+	// flatten the regions data and set the network region ids
+	setNetworkRegionIds(regionsData, networkData, regions)
 	CreateNetworkPayload := perimeter81Sdk.CreateNetworkPayload{
 		Name:   networkData.Name,
 		Tags:   networkData.Tags,
