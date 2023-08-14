@@ -67,3 +67,20 @@ Required:
 Read-Only:
 
 - `id` (String) The ID of this resource.
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Gateways of a specific Region using Network ID (networkId) and Region ID (regionId). For example:
+
+```terraform
+import {
+  to = perimeter81_gateway.g1
+  id = "d2ypk4k47z8u6-d3FsF5S36c4y1"
+}
+```
+
+Using `terraform import`, import Gateways of a specific Region using Network ID (networkId) and Region ID (regionId) in format of networkId-regionId. For example:
+
+```terraform
+% terraform import perimeter81_gateway.g1 d2ypk4k47z8u6-d3FsF5S36c4y1 
+```

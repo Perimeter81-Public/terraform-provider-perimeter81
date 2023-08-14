@@ -67,3 +67,20 @@ Optional:
 
 - `subnet` (String) Subnet to associate
 - `tags` (List of String) List of tags for the network Resource
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Network with all of its regions using Network ID (networkId). For example:
+
+```terraform
+import {
+  to = perimeter81_network.n1
+  id = "d2ypk4k47z8u6"
+}
+```
+
+Using `terraform import`, import Network with all of its regions using Network ID (networkId). For example:
+
+```terraform
+% terraform import perimeter81_network.n1 d2ypk4k47z8u6 
+```
