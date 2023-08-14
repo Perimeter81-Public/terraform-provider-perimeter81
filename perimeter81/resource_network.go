@@ -81,20 +81,20 @@ func resourceNetwork() *schema.Resource {
 			},
 		},
 		Importer: &schema.ResourceImporter{
-			StateContext: resourceNetworkImportState,
+			StateContext: ResourceNetworkImportState,
 		},
 	}
 }
 
 /*
-resourceNetworkImportState Import a Network
+ResourceNetworkImportState Import gateways
   - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
   - @param d *schema.ResourceData - the terraform resource data
   - @param m interface{} - the terraform meta data that contains the client
 
-@return []*schema.ResourceData, error
+@return diag.Diagnostics
 */
-func resourceNetworkImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func ResourceNetworkImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	diagnostics := resourceNetworkRead(ctx, d, m)
 	if diagnostics.HasError() {
 		for _, diagnostic := range diagnostics {
@@ -154,6 +154,17 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 		var networkStatus perimeter81Sdk.AsyncOperationStatus
 		networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
 		if err != nil {
+			networks, _, err := client.NetworksApi.GetNetworks(ctx)
+			if err != nil {
+				d.Partial(true)
+				return appendErrorDiags(diags, "Unable to Create Network", err)
+			}
+			for _, networkData := range networks {
+				if networkData.Name == name {
+					d.SetId(networkData.Id)
+					return resourceNetworkRead(ctx, d, m)
+				}
+			}
 			d.Partial(true)
 			return diags
 		}
@@ -215,7 +226,6 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 		Tags:   networkData.Tags,
 		Subnet: networkData.Subnet,
 	}
-
 	// set the network data and the regions data
 	network := flattenNetworkData([]perimeter81Sdk.CreateNetworkPayload{CreateNetworkPayload})
 	if err := d.Set("network", network); err != nil {

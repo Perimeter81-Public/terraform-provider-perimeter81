@@ -756,14 +756,13 @@ func regionClonsInArray(regionId string, regions []perimeter81Sdk.CreateRegionIn
 }
 
 /*
-importRegions import the manually added regions 
+importRegions import the manually added regions
   - @param networkData perimeter81Sdk.Network - the network data
   - @param regionsData perimeter81Sdk.RegionsList - the regions date list
   - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions inside the configuration file if exists
 
 @return []perimeter81Sdk.CreateRegionInNetworkload - the result
-
- */
+*/
 func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sdk.RegionsList, regions []perimeter81Sdk.CreateRegionInNetworkload) []perimeter81Sdk.CreateRegionInNetworkload {
 	if len(regions) == 0 {
 		regions = make([]perimeter81Sdk.CreateRegionInNetworkload, len(networkData.Regions))
@@ -782,4 +781,23 @@ func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sd
 		}
 	}
 	return regions
+}
+
+/*
+getGatewaysInArray get the manually added gateways inside a specific region inside a given network
+  - @param regionId string - the region id
+  - @param network perimeter81Sdk.Network - the network that has the gateways
+
+@return []perimeter81Sdk.NetworkInstance - the result
+*/
+func getGatewaysInArray(regionId string, network perimeter81Sdk.Network) []perimeter81Sdk.NetworkInstance {
+	clons := make([]perimeter81Sdk.NetworkInstance, 0)
+
+	for _, region := range network.Regions {
+		if region.Id == regionId {
+			clons = append(clons, region.Instances...)
+			break
+		}
+	}
+	return clons
 }
