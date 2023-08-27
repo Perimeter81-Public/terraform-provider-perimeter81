@@ -3,6 +3,7 @@ package perimeter81
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
@@ -163,6 +164,11 @@ func resourceIpsecRedundant() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"tunnel_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 						"p81_gwinternal_ip": {
 							Type:     schema.TypeString,
 							Required: true,
@@ -190,6 +196,11 @@ func resourceIpsecRedundant() *schema.Resource {
 							Type:      schema.TypeString,
 							Sensitive: true,
 							Required:  true,
+						},
+						"tunnel_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 						"gateway_id": {
 							Type:     schema.TypeString,
@@ -219,7 +230,36 @@ func resourceIpsecRedundant() *schema.Resource {
 					}},
 			},
 		},
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceIpsecRedundantImportState,
+		},
 	}
+}
+
+/*
+resourceOpenvpnImportState Import gateways
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return diag.Diagnostics
+*/
+func resourceIpsecRedundantImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+
+	// get the network and tunnel id and validate
+	if len(strings.Split(d.Id(), "-")) != 2 {
+		return nil, fmt.Errorf("could not import tunnel without provider the network_id and the tunnel_id in format network_id-tunnel_id\n")
+	}
+
+	diagnostics := resourceIpsecRedundantRead(ctx, d, m)
+	if diagnostics.HasError() {
+		for _, diagnostic := range diagnostics {
+			if diagnostic.Severity == diag.Error {
+				return nil, fmt.Errorf("could not import ipsec redundant tunnel: %s, \n %s", diagnostic.Summary, diagnostic.Detail)
+			}
+		}
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 /*
@@ -382,16 +422,53 @@ func resourceIpsecRedundantRead(ctx context.Context, d *schema.ResourceData, m i
 	}
 
 	// get the ipsec-redundant tunnel id and the network id from the terraform resource data
-	tunnelId := d.Id()
-	networkId := d.Get("network_id").(string)
+	ids := strings.Split(d.Id(), "-")
+	var networkId string
+	var tunnelId string
+	if len(ids) == 1 {
+		tunnelId = d.Id()
+		networkId = d.Get("network_id").(string)
+	} else {
+		networkId = ids[0]
+		tunnelId = ids[1]
+	}
 
 	// get the ipsec-redundant tunnel using the client sdk and check for errors
-	_, _, err := client.IPSecRedundantApi.GetIPSecRedundantTunnel(ctx, networkId, tunnelId)
+	tunnel, _, err := client.IPSecRedundantApi.GetIPSecRedundantTunnel(ctx, networkId, tunnelId)
+
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read ipsec-redundant tunnel", err)
 	}
-
+	if err := d.Set("network_id", networkId); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set networkId", err)
+	}
+	if err := d.Set("region_id", tunnel.RegionID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set regionId", err)
+	}
+	if err := d.Set("tunnel_name", tunnel.TunnelName); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel name", err)
+	}
+	if err := d.Set("advanced_settings", flattenAdvancedSettingsData(tunnel.AdvancedSettings)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set advanced settings", err)
+	}
+	if err := d.Set("shared_settings", flattenSharedSettingsData(tunnel.SharedSettings)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set shared settings", err)
+	}
+	if err := d.Set("tunnel1", flattenTunnelData(tunnel.Tunnel1)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel1", err)
+	}
+	if err := d.Set("tunnel2", flattenTunnelData(tunnel.Tunnel2)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel2", err)
+	}
+	d.SetId(tunnelId)
 	return diags
 }
 

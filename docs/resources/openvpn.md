@@ -57,3 +57,20 @@ data "perimeter81_networks" "all" {
     version = 2
  }
 ```
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Openvpn tunnel using Network ID (networkId) and Tunnel ID (tunnelId). For example:
+
+```terraform
+import {
+  to = perimeter81_openvpn.ovpn1
+  id = "d2ypk4k47-g1teg6d57"
+}
+```
+
+Using `terraform import`, import Openvpn tunnel using Network ID (networkId) and Tunnel ID (tunnelId) in format of networkId-tunnelId. For example:
+
+```terraform
+% terraform import perimeter81_openvpn.ovpn1 d2ypk4k47-g1teg6d57
+```

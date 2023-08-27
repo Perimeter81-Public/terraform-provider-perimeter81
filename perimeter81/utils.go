@@ -354,6 +354,93 @@ func flattenNetworkTunnelsData(tunnelItems []perimeter81Sdk.NetworkTunnel) []int
 }
 
 /*
+flattenPhasesData flatten Phases date
+  - @param phasesItems *perimeter81Sdk.NetworkTunnel - the network tunnels that need to be flattened
+
+@return []interface{} - the flattened  phases data
+*/
+func flattenPhasesData(phasesItem *perimeter81Sdk.IpSecPhase) []interface{} {
+	if phasesItem != nil {
+		phase := make([]interface{}, 1)
+		phaseData := make(map[string]interface{})
+		phaseData["auth"] = phasesItem.Auth
+		phaseData["encryption"] = phasesItem.Encryption
+		phaseData["dh"] = phasesItem.Dh
+		phase[0] = phaseData
+		return phase
+	}
+
+	return make([]interface{}, 0)
+}
+/*
+flattenAdvancedSettingsData flatten Advanced Settings date
+  - @param advancedSettingsItem *IpSecAdvancedSettings - the advanced settings that need to be flattened
+
+@return []interface{} - the flattened advanced settings data
+*/
+func flattenAdvancedSettingsData(advancedSettingsItem *perimeter81Sdk.IpSecAdvancedSettings) []interface{} {
+	if advancedSettingsItem != nil {
+		advancedSettings := make([]interface{}, 1)
+		advancedSettingsData := make(map[string]interface{})
+		advancedSettingsData["key_exchange"] = advancedSettingsItem.KeyExchange
+		advancedSettingsData["ike_life_time"] = advancedSettingsItem.IkeLifeTime
+		advancedSettingsData["lifetime"] = advancedSettingsItem.Lifetime
+		advancedSettingsData["dpd_delay"] = advancedSettingsItem.DpdDelay
+		advancedSettingsData["dpd_timeout"] = advancedSettingsItem.DpdTimeout
+		advancedSettingsData["phase1"] = flattenPhasesData(advancedSettingsItem.Phase1)
+		advancedSettingsData["phase2"] = flattenPhasesData(advancedSettingsItem.Phase2)
+		advancedSettings[0] = advancedSettingsData
+		return advancedSettings
+	}
+
+	return make([]interface{}, 0)
+}
+
+/*
+flattenSharedSettingsData flatten Shared Settings date
+  - @param advancedSettingsItem *IpSecSharedSettings - the Ip-Sec Shared settings that need to be flattened
+
+@return []interface{} - the flattened Ip-Sec Shared settings data
+*/
+func flattenSharedSettingsData(sharedSettingsItem *perimeter81Sdk.IpSecSharedSettings) []interface{} {
+	if sharedSettingsItem != nil {
+		sharedSettings := make([]interface{}, 1)
+		sharedSettingsData := make(map[string]interface{})
+		sharedSettingsData["p81_gateway_subnets"] = sharedSettingsItem.P81GatewaySubnets
+		sharedSettingsData["remote_gateway_subnets"] = sharedSettingsItem.RemoteGatewaySubnets
+		sharedSettings[0] = sharedSettingsData
+		return sharedSettings
+	}
+
+	return make([]interface{}, 0)
+}
+
+/*
+flattenTunnelData flatten Tunnel date
+  - @param tunnelItem *IpSecRedundantTunnel - the tunnel that need to be flattened
+
+@return []interface{} - the flattened tunnel data
+*/
+func flattenTunnelData(tunnelItem *perimeter81Sdk.IpSecRedundantTunnel) []interface{} {
+	if tunnelItem != nil {
+		tunnel := make([]interface{}, 1)
+		tunnelData := make(map[string]interface{})
+		tunnelData["passphrase"] = tunnelItem.Passphrase
+		tunnelData["gateway_id"] = tunnelItem.GatewayID
+		tunnelData["remote_id"] = tunnelItem.RemoteID
+		tunnelData["p81_gwinternal_ip"] = tunnelItem.P81GWinternalIP
+		tunnelData["remote_gwinternal_ip"] = tunnelItem.RemoteGWinernalIP
+		tunnelData["remote_public_ip"] = tunnelItem.RemotePublicIP
+		tunnelData["remote_asn"] = tunnelItem.RemoteASN
+		tunnelData["tunnel_id"] = tunnelItem.TunnelID
+		tunnel[0] = tunnelData
+		return tunnel
+	}
+
+	return make([]interface{}, 0)
+}
+
+/*
 getTunnelId get the tunnel id
   - @param ctx context.Context - the context
   - @param networkId string - the network id

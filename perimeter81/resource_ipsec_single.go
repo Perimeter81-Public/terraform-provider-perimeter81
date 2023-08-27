@@ -2,6 +2,8 @@ package perimeter81
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
@@ -158,7 +160,36 @@ func resourceIpsecSingle() *schema.Resource {
 					}},
 			},
 		},
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceIpsecSingleImportState,
+		},
 	}
+}
+
+/*
+resourceOpenvpnImportState Import gateways
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return diag.Diagnostics
+*/
+func resourceIpsecSingleImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+
+	// get the network and tunnel id and validate
+	if len(strings.Split(d.Id(), "-")) != 2 {
+		return nil, fmt.Errorf("could not import tunnel without provider the network_id and the tunnel_id in format network_id-tunnel_id\n")
+	}
+
+	diagnostics := resourceIpsecSingleRead(ctx, d, m)
+	if diagnostics.HasError() {
+		for _, diagnostic := range diagnostics {
+			if diagnostic.Severity == diag.Error {
+				return nil, fmt.Errorf("could not import ipsec single tunnel: %s, \n %s", diagnostic.Summary, diagnostic.Detail)
+			}
+		}
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 /*
@@ -287,8 +318,16 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	// get the ipsec-single tunnel id and the network id
-	tunnelId := d.Id()
-	networkId := d.Get("network_id").(string)
+	ids := strings.Split(d.Id(), "-")
+	var networkId string
+	var tunnelId string
+	if len(ids) == 1 {
+		tunnelId = d.Id()
+		networkId = d.Get("network_id").(string)
+	} else {
+		networkId = ids[0]
+		tunnelId = ids[1]
+	}
 
 	// get the ipsec-single tunnel and check for errors
 	tunnel, _, err := client.IPSecSingleApi.GetIPSecSingleTunnel(ctx, networkId, tunnelId)
@@ -297,9 +336,79 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 		return appendErrorDiags(diags, "Unable to read ipsec-single tunnel", err)
 	}
 	// set the ipsec-single tunnel computed data
-	d.Set("created_at", tunnel.CreatedAt.String())
-	d.Set("updated_at", tunnel.UpdatedAt.String())
-	d.Set("remote_id", tunnel.RemoteID)
+	if err := d.Set("created_at", tunnel.CreatedAt.String()); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set createdAt", err)
+	}
+	if err := d.Set("updated_at", tunnel.UpdatedAt.String()); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set updatedAt", err)
+	}
+	if err := d.Set("remote_id", tunnel.RemoteID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set remoteId", err)
+	}
+	if err := d.Set("key_exchange", tunnel.KeyExchange); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set keyExchange", err)
+	}
+	if err := d.Set("remote_public_ip", tunnel.RemotePublicIP); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Remote Public IP", err)
+	}
+	if err := d.Set("ike_life_time", tunnel.IkeLifeTime); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set ike lifetime", err)
+	}
+	if err := d.Set("lifetime", tunnel.LifeTime); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set lifetime", err)
+	}
+	if err := d.Set("dpd_delay", tunnel.DpdDelay); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Dpd delay", err)
+	}
+	if err := d.Set("dpd_timeout", tunnel.DpdTimeout); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Dpd timeout", err)
+	}
+	if err := d.Set("passphrase", tunnel.Passphrase); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set passphrase", err)
+	}
+	if err := d.Set("network_id", networkId); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set networkId", err)
+	}
+	if err := d.Set("region_id", tunnel.RegionID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set regionId", err)
+	}
+	if err := d.Set("gateway_id", tunnel.GatewayID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set gatewayId", err)
+	}
+	if err := d.Set("tunnel_name", tunnel.TunnelName); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set name", err)
+	}
+	if err := d.Set("p81_gateway_subnets", tunnel.P81GatewaySubnets); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set p81 gateway subnets", err)
+	}
+	if err := d.Set("remote_gateway_subnets", tunnel.RemoteGatewaySubnets); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set remote subnets", err)
+	}
+	if err := d.Set("phase1", flattenPhasesData(tunnel.Phase1)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set phase1", err)
+	}
+	if err := d.Set("phase2", flattenPhasesData(tunnel.Phase2)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set phase2", err)
+	}
+	d.SetId(tunnelId)
 	return diags
 }
 

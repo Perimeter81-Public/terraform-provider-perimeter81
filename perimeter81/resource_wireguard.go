@@ -2,6 +2,8 @@ package perimeter81
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
@@ -65,7 +67,36 @@ func resourceWireguard() *schema.Resource {
 				},
 			},
 		},
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceWireguardImportState,
+		},
 	}
+}
+
+/*
+resourceWireguardImportState Import gateways
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return diag.Diagnostics
+*/
+func resourceWireguardImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+
+	// get the network and tunnel id and validate
+	if len(strings.Split(d.Id(), "-")) != 2 {
+		return nil, fmt.Errorf("could not import tunnel without provider the network_id and the tunnel_id in format network_id-tunnel_id\n")
+	}
+
+	diagnostics := resourceWireguardRead(ctx, d, m)
+	if diagnostics.HasError() {
+		for _, diagnostic := range diagnostics {
+			if diagnostic.Severity == diag.Error {
+				return nil, fmt.Errorf("could not import wireguard: %s, \n %s", diagnostic.Summary, diagnostic.Detail)
+			}
+		}
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 /*
@@ -160,8 +191,16 @@ func resourceWireguardRead(ctx context.Context, d *schema.ResourceData, m interf
 	}
 
 	// get the tunnel id and the network id from the terraform resource
-	tunnelId := d.Id()
-	networkId := d.Get("network_id").(string)
+	ids := strings.Split(d.Id(), "-")
+	var networkId string
+	var tunnelId string
+	if len(ids) == 1 {
+		tunnelId = d.Id()
+		networkId = d.Get("network_id").(string)
+	} else {
+		networkId = ids[0]
+		tunnelId = ids[1]
+	}
 
 	// get the wireguard tunnel and check for errors
 	tunnel, _, err := client.WireguardApi.GetWireguardTunnel(ctx, networkId, tunnelId)
@@ -174,10 +213,35 @@ func resourceWireguardRead(ctx context.Context, d *schema.ResourceData, m interf
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set remoteendpoint", err)
 	}
+	if err := d.Set("network_id", networkId); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set networkId", err)
+	}
+	if err := d.Set("gateway_id", tunnel.GatewayID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set gatewayId", err)
+	}
+	if err := d.Set("region_id", tunnel.RegionID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set regionId", err)
+	}
+	if err := d.Set("tunnel_name", tunnel.TunnelName); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnelName", err)
+	}
+	if err := d.Set("created_at", tunnel.CreatedAt.String()); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set createdAt", err)
+	}
+	if err := d.Set("updated_at", tunnel.UpdatedAt.String()); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set updatedAt", err)
+	}
 	if err := d.Set("remote_subnets", tunnel.RemoteSubnets); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set remotesubnets", err)
 	}
+	d.SetId(tunnelId)
 
 	return diags
 }

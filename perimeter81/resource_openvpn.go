@@ -2,6 +2,8 @@ package perimeter81
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
@@ -72,7 +74,36 @@ func resourceOpenvpn() *schema.Resource {
 				Computed: true,
 			},
 		},
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceOpenvpnImportState,
+		},
 	}
+}
+
+/*
+resourceOpenvpnImportState Import gateways
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return diag.Diagnostics
+*/
+func resourceOpenvpnImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+
+	// get the network and tunnel id and validate
+	if len(strings.Split(d.Id(), "-")) != 2 {
+		return nil, fmt.Errorf("could not import tunnel without provider the network_id and the tunnel_id in format network_id-tunnel_id\n")
+	}
+
+	diagnostics := resourceOpenvpnRead(ctx, d, m)
+	if diagnostics.HasError() {
+		for _, diagnostic := range diagnostics {
+			if diagnostic.Severity == diag.Error {
+				return nil, fmt.Errorf("could not import openvpn tunnel: %s, \n %s", diagnostic.Summary, diagnostic.Detail)
+			}
+		}
+	}
+	return []*schema.ResourceData{d}, nil
 }
 
 /*
@@ -156,8 +187,16 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	// get the tunnel id and the network id from the resource data
-	tunnelId := d.Id()
-	networkId := d.Get("network_id").(string)
+	ids := strings.Split(d.Id(), "-")
+	var networkId string
+	var tunnelId string
+	if len(ids) == 1 {
+		tunnelId = d.Id()
+		networkId = d.Get("network_id").(string)
+	} else {
+		networkId = ids[0]
+		tunnelId = ids[1]
+	}
 
 	// get the tunnel and check for errors
 	tunnel, _, err := client.OpenVPNApi.GetOpenVPNTunnel(ctx, networkId, tunnelId)
@@ -166,6 +205,22 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 		return appendErrorDiags(diags, "Unable to read openvpn tunnel", err)
 	}
 	// set the resource computed data
+	if err := d.Set("tunnel_name", tunnel.TunnelName); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel_name", err)
+	}
+	if err := d.Set("network_id", networkId); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to network id", err)
+	}
+	if err := d.Set("region_id", tunnel.RegionID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to region id", err)
+	}
+	if err := d.Set("gateway_id", tunnel.GatewayID); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set gateway id", err)
+	}
 	if err := d.Set("access_key_id", tunnel.AccessKeyId); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set access key id", err)
@@ -186,7 +241,7 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set created at", err)
 	}
-
+	d.SetId(tunnelId)
 	return diags
 }
 

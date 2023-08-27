@@ -105,3 +105,20 @@ Required:
 - `auth` (List of String) Possible values: md5, sha1, sha256, sha348, sha512
 - `dh` (List of Number) Possible values: 2, 5, 14, 19, 20, 21
 - `encryption` (List of String) Possible values: 3des, blowfish128, blowfish192, blowfish256, aes128, aes192, aes256
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Ip-Sec single tunnel using Network ID (networkId) and Tunnel ID (tunnelId). For example:
+
+```terraform
+import {
+  to = perimeter81_ipsec_single.ipss1
+  id = "t2rpk4k59-c1thg6d54"
+}
+```
+
+Using `terraform import`, import Ip-Sec single tunnel using Network ID (networkId) and Tunnel ID (tunnelId) in format of networkId-tunnelId. For example:
+
+```terraform
+% terraform perimeter81_ipsec_single.ipss1 t2rpk4k59-c1thg6d54
+```

@@ -57,3 +57,20 @@ resource "perimeter81_wireguard" "wgd1" {
   remote_subnets = ["192.177.255.255/32"]
 }
 ```
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Wireguard tunnel using Network ID (networkId) and Tunnel ID (tunnelId). For example:
+
+```terraform
+import {
+  to = perimeter81_wireguard.wgd1
+  id = "u2yrk4k1p-q1wgg6d0p"
+}
+```
+
+Using `terraform import`, import Wireguard tunnel using Network ID (networkId) and Tunnel ID (tunnelId) in format of networkId-tunnelId. For example:
+
+```terraform
+% terraform import perimeter81_wireguard.wgd1 u2yrk4k1p-q1wgg6d0p
+```

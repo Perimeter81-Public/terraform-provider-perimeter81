@@ -170,3 +170,20 @@ Required:
 Optional:
 
 - `remote_id` (String) In most cases, the ID of the remote tunnel is the public IP of the tunnel. However, it must be configured to the same value on both ends
+
+## import
+
+In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Ip-Sec redundant tunnel using Network ID (networkId) and haTunnelID ID (common tunnel id for both tunnels in the redundant tunnel) (tunnelId). For example:
+
+```terraform
+import {
+  to = perimeter81_ipsec_redundant.ipsr1
+  id = "j1rrk5k0q-c1hgl6d1m"
+}
+```
+
+Using `terraform import`, import Ip-Sec redundant tunnel using Network ID (networkId) and haTunnelID ID (common tunnel id for both tunnels in the redundant tunnel) (tunnelId) in format of networkId-tunnelId. For example:
+
+```terraform
+% terraform import perimeter81_ipsec_redundant.ipsr1 j1rrk5k0q-c1hgl6d1m
+```
