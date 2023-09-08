@@ -48,7 +48,6 @@ description: |-
 Required:
 
 - `cpregion_id` (String) General ID that uniquely identifies the region across all regions can be found from the regions datasource.
-- `instance_count` (Number) Number of instances that will be created for a specified region inside the network.
 
 Optional:
 
