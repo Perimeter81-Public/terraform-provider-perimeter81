@@ -204,10 +204,7 @@ func resourceIpsecSingleCreate(ctx context.Context, d *schema.ResourceData, m in
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the ipsec single data from the terraform resource data and flatten what need to be flattened for the api
 	networkId := d.Get("network_id").(string)
@@ -312,10 +309,7 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the ipsec-single tunnel id and the network id
 	ids := strings.Split(d.Id(), "-")
@@ -424,10 +418,7 @@ func resourceIpsecSingleUpdate(ctx context.Context, d *schema.ResourceData, m in
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// check if the ipsec single data has changes
 	if d.HasChanges("key_exchange", "remote_public_ip", "remote_id", "passphrase", "dpd_timeout", "dpd_delay", "lifetime", "ike_life_time", "p81_gateway_subnets", "remote_gateway_subnets", "phase1", "phase2") {
@@ -523,10 +514,7 @@ func resourceIpsecSingleDelete(ctx context.Context, d *schema.ResourceData, m in
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the ipsec-single tunnel id and the network id from the terraform resource data
 	tunnelId := d.Id()

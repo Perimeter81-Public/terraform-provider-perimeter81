@@ -33,12 +33,10 @@ description: |-
    }
    region {
      cpregion_id = "v2cRwzGRua"
-     instance_count = 1
      idle = true
    }
    region {
      cpregion_id = "F2w4QTggWt"
-     instance_count = 1
      idle = true
    }
  }

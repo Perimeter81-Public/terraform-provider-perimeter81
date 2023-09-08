@@ -141,22 +141,30 @@ resource "perimeter81_network" "n4" {
   }
   region {
     cpregion_id = "Xv3BREC4QI"
-    instance_count = 2
     idle = true
   }
+}
+resource "perimeter81_gateway"  "g2"{
+
+  network_id = perimeter81_network.n4.id
+  region_id = perimeter81_network.n4.region[0].region_id
+   gateways {
+      name = "perimeter81"
+      idle = true
+  }
+  	depends_on = [
+    	perimeter81_network.n4
+  	]
 }
 
 data "perimeter81_networks" "all4" {
 	depends_on = [
-    	perimeter81_network.n4
+    	perimeter81_network.n4,
+		perimeter81_gateway.g2
   	]
 }
 resource "perimeter81_ipsec_redundant" "ipsr1" {
-  region_id = {
-    for network in data.perimeter81_networks.all4.networks :
-    network.id => network.regions[0].id
-    if network.id == perimeter81_network.n4.id
-  }[perimeter81_network.n4.id]
+  region_id = perimeter81_network.n4.region[0].region_id
   network_id = perimeter81_network.n4.id
   tunnel_name = "ipseed"
   tunnel1 {
@@ -164,8 +172,7 @@ resource "perimeter81_ipsec_redundant" "ipsr1" {
       p81_gwinternal_ip = "169.254.100.19"
       remote_gwinternal_ip = "169.254.100.5"
       remote_public_ip = "169.254.100.7"
-      remote_id = "169.254.100.7"
-      remote_asn = 65323
+      remote_asn = "65323"
       gateway_id = {
 		for network in data.perimeter81_networks.all4.networks :
 		network.id => network.regions[0].instances[0].id
@@ -177,8 +184,7 @@ resource "perimeter81_ipsec_redundant" "ipsr1" {
       p81_gwinternal_ip = "169.254.100.10"
       remote_gwinternal_ip = "169.254.100.14"
       remote_public_ip = "169.254.100.16"
-      remote_id = "169.254.100.16"
-      remote_asn = 65324
+      remote_asn = "65324"
       gateway_id = {
 		for network in data.perimeter81_networks.all4.networks :
 		network.id => network.regions[0].instances[1].id

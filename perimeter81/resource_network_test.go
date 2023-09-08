@@ -96,7 +96,6 @@ resource "perimeter81_network" "n" {
 	}
 	region {
 		cpregion_id = "r2Epw6OJsx"
-		instance_count = 1
 		idle = true
 	}
 }
@@ -113,7 +112,6 @@ resource "perimeter81_network" "n" {
 	}
 	region {
 		cpregion_id = "r2Epw6OJsx"
-		instance_count = 1
 		idle = true
 	}
 }

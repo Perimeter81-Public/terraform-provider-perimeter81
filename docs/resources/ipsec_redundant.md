@@ -28,53 +28,62 @@ description: |-
 ### Example
 
 ```terraform
- resource "perimeter81_network" "n1" {
-   network {
-     name = "network-test"
-     tags = ["test"]
-   }
-   region {
-     cpregion_id = "v2cRwzGRua"
-     instance_count = 2
-     idle = true
-   }
- }
+ resource "perimeter81_network" "n4" {
+  network {
+    name = "%s"
+    tags = ["test"]
+  }
+  region {
+    cpregion_id = "Xv3BREC4QI"
+    idle = true
+  }
+}
+resource "perimeter81_gateway"  "g2"{
 
-data "perimeter81_networks" "all" {
-    depends_on = [
-        perimeter81_network.n1
-    ]
+  network_id = perimeter81_network.n4.id
+  region_id = perimeter81_network.n4.region[0].region_id
+   gateways {
+      name = "perimeter81"
+      idle = true
+  }
+  	depends_on = [
+    	perimeter81_network.n4
+  	]
 }
 
+data "perimeter81_networks" "all4" {
+	depends_on = [
+    	perimeter81_network.n4,
+		perimeter81_gateway.g2
+  	]
+}
 resource "perimeter81_ipsec_redundant" "ipsr1" {
-  region_id = perimeter81_network.n1.region[0].region_id
-  network_id = perimeter81_network.n1.id
+  region_id = perimeter81_network.n4.region[0].region_id
+  network_id = perimeter81_network.n4.id
   tunnel_name = "ipseed"
   tunnel1 {
       passphrase = "aXvgHEYt"
       p81_gwinternal_ip = "169.254.100.19"
       remote_gwinternal_ip = "169.254.100.5"
       remote_public_ip = "169.254.100.7"
-      remote_id = "169.254.100.7"
-      remote_asn = 65323
+      remote_asn = "65323"
       gateway_id = {
-        for network in data.perimeter81_networks.all.networks :
-        network.id => network.regions[0].instances[0].id
-        if network.id == perimeter81_network.n1.id
-      }[perimeter81_network.n1.id]
+		for network in data.perimeter81_networks.all4.networks :
+		network.id => network.regions[0].instances[0].id
+		if network.id == perimeter81_network.n4.id
+	  }[perimeter81_network.n4.id]
   }
   tunnel2 {
       passphrase = "Sg4gKHtT"
       p81_gwinternal_ip = "169.254.100.10"
       remote_gwinternal_ip = "169.254.100.14"
       remote_public_ip = "169.254.100.16"
-      remote_id = "169.254.100.16"
-      remote_asn = 65324
+      remote_asn = "65324"
       gateway_id = {
-        for network in data.perimeter81_networks.all.networks :
-        network.id => network.regions[0].instances[1].id
-        if network.id == perimeter81_network.n1.id
-      }[perimeter81_network.n1.id]
+		for network in data.perimeter81_networks.all4.networks :
+		network.id => network.regions[0].instances[1].id
+		if network.id == perimeter81_network.n4.id
+	  }[perimeter81_network.n4.id]
   }
   shared_settings {
     p81_gateway_subnets = ["0.0.0.0/0"]

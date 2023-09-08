@@ -45,8 +45,7 @@ func resourceNetwork() *schema.Resource {
 						},
 						"tags": {
 							Type:     schema.TypeList,
-							Computed: true,
-							Optional: true,
+							Required: true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -67,10 +66,6 @@ func resourceNetwork() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
-						},
-						"instance_count": {
-							Type:     schema.TypeInt,
-							Required: true,
 						},
 						"idle": {
 							Type:     schema.TypeBool,

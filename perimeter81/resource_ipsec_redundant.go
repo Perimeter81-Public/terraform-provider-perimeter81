@@ -3,6 +3,7 @@ package perimeter81
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -182,7 +183,7 @@ func resourceIpsecRedundant() *schema.Resource {
 							Required: true,
 						},
 						"remote_asn": {
-							Type:     schema.TypeFloat,
+							Type:     schema.TypeString,
 							Required: true,
 						},
 					}},
@@ -224,7 +225,7 @@ func resourceIpsecRedundant() *schema.Resource {
 							Required: true,
 						},
 						"remote_asn": {
-							Type:     schema.TypeFloat,
+							Type:     schema.TypeString,
 							Required: true,
 						},
 					}},
@@ -275,10 +276,7 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the tunnel data from the terraform resource and flatten what need to be flattened for the api
 	networkId := d.Get("network_id").(string)
@@ -291,14 +289,14 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 	p81GWinternalIP1 := tunnel1Data["p81_gwinternal_ip"].(string)
 	remoteGWinernalIP1 := tunnel1Data["remote_gwinternal_ip"].(string)
 	remotePublicIP1 := tunnel1Data["remote_public_ip"].(string)
-	remoteAsn1 := tunnel1Data["remote_asn"].(float64)
+	remoteAsn1, _ := strconv.ParseFloat(tunnel1Data["remote_asn"].(string), 64)
 	remoteId1 := tunnel1Data["remote_id"].(string)
 	gatewayId2 := tunnel2Data["gateway_id"].(string)
 	passphrase2 := tunnel2Data["passphrase"].(string)
 	p81GWinternalIP2 := tunnel2Data["p81_gwinternal_ip"].(string)
 	remoteGWinernalIP2 := tunnel2Data["remote_gwinternal_ip"].(string)
 	remotePublicIP2 := tunnel2Data["remote_public_ip"].(string)
-	remoteAsn2 := tunnel2Data["remote_asn"].(float64)
+	remoteAsn2, _ := strconv.ParseFloat(tunnel2Data["remote_asn"].(string), 64)
 	remoteId2 := tunnel2Data["remote_id"].(string)
 	sharedSettingsData := d.Get("shared_settings").([]interface{})[0].(map[string]interface{})
 	p81GatewaySubnets := flattenStringsArrayData(sharedSettingsData["p81_gateway_subnets"].([]interface{}))
@@ -363,7 +361,6 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 			},
 		},
 	}
-
 	// create the ipsec-redundant tunnel using the client sdk and check for errors
 	status, _, err := client.IPSecRedundantApi.CreateIPSecRedundantTunnel(ctx, ipSecRedundantBody, networkId)
 	if err != nil {
@@ -416,10 +413,7 @@ func resourceIpsecRedundantRead(ctx context.Context, d *schema.ResourceData, m i
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the ipsec-redundant tunnel id and the network id from the terraform resource data
 	ids := strings.Split(d.Id(), "-")
@@ -460,13 +454,15 @@ func resourceIpsecRedundantRead(ctx context.Context, d *schema.ResourceData, m i
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set shared settings", err)
 	}
-	if err := d.Set("tunnel1", flattenTunnelData(tunnel.Tunnel1)); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set tunnel1", err)
-	}
-	if err := d.Set("tunnel2", flattenTunnelData(tunnel.Tunnel2)); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set tunnel2", err)
+	if len(ids) != 1 {
+		if err := d.Set("tunnel1", flattenTunnelData(tunnel.Tunnel1)); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set tunnel1", err)
+		}
+		if err := d.Set("tunnel2", flattenTunnelData(tunnel.Tunnel2)); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set tunnel2", err)
+		}
 	}
 	d.SetId(tunnelId)
 	return diags
@@ -497,10 +493,7 @@ func resourceIpsecRedundantDelete(ctx context.Context, d *schema.ResourceData, m
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the ipsec-redundant tunnel id and the network id from the terraform resource data
 	tunnelId := d.Id()

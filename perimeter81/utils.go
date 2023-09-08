@@ -94,7 +94,6 @@ func flattenRegionsData(regionItems []interface{}) []perimeter81Sdk.CreateRegion
 			region := perimeter81Sdk.CreateRegionInNetworkload{}
 
 			region.CpRegionId = regionItem.(map[string]interface{})["cpregion_id"].(string)
-			region.InstanceCount = int32(regionItem.(map[string]interface{})["instance_count"].(int))
 			region.Idle = regionItem.(map[string]interface{})["idle"].(bool)
 			region_id := regionItem.(map[string]interface{})["region_id"]
 			if region_id != nil {
@@ -200,7 +199,6 @@ func flattenNetworkRegions(regionItems []perimeter81Sdk.CreateRegionInNetworkloa
 
 			region["cpregion_id"] = regionItem.CpRegionId
 			region["region_id"] = regionItem.RegionID
-			region["instance_count"] = regionItem.InstanceCount
 			region["idle"] = regionItem.Idle
 			regions[i] = region
 		}
@@ -372,6 +370,7 @@ func flattenPhasesData(phasesItem *perimeter81Sdk.IpSecPhase) []interface{} {
 
 	return make([]interface{}, 0)
 }
+
 /*
 flattenAdvancedSettingsData flatten Advanced Settings date
   - @param advancedSettingsItem *IpSecAdvancedSettings - the advanced settings that need to be flattened
@@ -606,9 +605,8 @@ func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, g
 	}
 	for index, gateway := range gateways {
 		gatewayPayload := perimeter81Sdk.CreateGatewayInRegionload{
-			InstanceCount: 1,
-			RegionID:      region_id,
-			Idle:          gateway.Idle,
+			RegionID: region_id,
+			Idle:     gateway.Idle,
 		}
 		status, _, err := client.GatewaysApi.NetworksControllerV2AddNetworkInstance(ctx, gatewayPayload, network_id)
 		if err != nil {
@@ -855,7 +853,6 @@ func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sd
 		regions = make([]perimeter81Sdk.CreateRegionInNetworkload, len(networkData.Regions))
 		for i, regionItem := range networkData.Regions {
 			region := perimeter81Sdk.CreateRegionInNetworkload{}
-			region.InstanceCount = int32(len(regionItem.Instances))
 			region.Idle = networkData.IsDefault
 			region.RegionID = regionItem.Id
 			for _, regionInfo := range regionsData.Regions {

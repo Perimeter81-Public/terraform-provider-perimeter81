@@ -245,9 +245,7 @@ func dataSourceNetworksRead(ctx context.Context, d *schema.ResourceData, m inter
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// call the api and check if there is an error
 	networks, _, err := client.NetworksApi.GetNetworks(ctx)

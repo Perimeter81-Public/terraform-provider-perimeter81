@@ -118,10 +118,7 @@ func resourceOpenvpnCreate(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the data from the resource data
 	networkId := d.Get("network_id").(string)
@@ -181,10 +178,7 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the tunnel id and the network id from the resource data
 	ids := strings.Split(d.Id(), "-")
@@ -257,10 +251,7 @@ func resourceOpenvpnUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// check if the version has changed
 	if d.HasChange("version") {
@@ -311,10 +302,7 @@ func resourceOpenvpnDelete(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the tunnel id and the network id from the resource data
 	tunnelId := d.Id()
