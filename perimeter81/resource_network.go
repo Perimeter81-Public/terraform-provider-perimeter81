@@ -113,10 +113,7 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the network data from the resource data and flatten what need to be flattened
 	network := d.Get("network").([]interface{})[0].(map[string]interface{})
@@ -189,10 +186,7 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// get the network id from the resource data
 	networkId := d.Id()
@@ -247,10 +241,7 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
 
 	// check if the network has changed
 	if d.HasChange("network") {
@@ -326,9 +317,8 @@ func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, m interf
 	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = context.Background()
+
 	// get the network id from the resource data
 	networkId := d.Id()
 	// delete the network and check for errors
