@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -723,11 +724,21 @@ appendErrorDiags append the error diagnostics
 @return diag.Diagnostics - the diagnostics
 */
 func appendErrorDiags(diags diag.Diagnostics, summary string, err error) diag.Diagnostics {
-
+	statusCodeString := strings.Split(err.Error(), " ")[0]
+	statusCode, errConversion := strconv.Atoi(statusCodeString)
+	var errMsg string
+	if errConversion != nil {
+		errMsg = err.Error()
+	}
+	if statusCode >= 300 {
+		errMsg = string(err.(perimeter81Sdk.GenericSwaggerError).Body())
+	} else {
+		errMsg = err.Error()
+	}
 	diags = append(diags, diag.Diagnostic{
 		Severity: diag.Error,
 		Summary:  summary,
-		Detail:   err.Error(),
+		Detail:   errMsg,
 	})
 	return diags
 }
