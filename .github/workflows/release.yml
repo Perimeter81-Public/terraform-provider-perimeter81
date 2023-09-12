@@ -32,9 +32,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
-      # - 
-      #   name: Test
-      #   run: PERIMETER81_API_KEY=${{secrets.PERIMETER81_API_KEY}} BASE_URL=https://api.perimeter81.biz/api/rest TF_ACC=1 go test -timeout 120m  -parallel 12 -v ./...
+      - 
+        name: Test
+        run: PERIMETER81_API_KEY=${{secrets.PERIMETER81_API_KEY}} BASE_URL=https://api.perimeter81.biz/api/rest TF_ACC=1 go test -timeout 120m  -parallel 12 -v ./...
 
       -
         name: Import GPG key
