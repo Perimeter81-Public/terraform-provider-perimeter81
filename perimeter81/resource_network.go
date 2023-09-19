@@ -43,6 +43,10 @@ func resourceNetwork() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"dns": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"tags": {
 							Type:     schema.TypeList,
 							Required: true,
@@ -65,6 +69,14 @@ func resourceNetwork() *schema.Resource {
 						"region_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"dns": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"idle": {
@@ -208,12 +220,13 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	regions := flattenRegionsData(d.Get("region").([]interface{}))
 	regions = importRegions(networkData, regionsData, regions)
 
-	// flatten the regions data and set the network region ids
-	setNetworkRegionIds(regionsData, networkData, regions)
+	// flatten the regions data and set the network region infos
+	setNetworkRegionInfos(regionsData, networkData, regions)
 	CreateNetworkPayload := perimeter81Sdk.CreateNetworkPayload{
 		Name:   networkData.Name,
 		Tags:   networkData.Tags,
 		Subnet: networkData.Subnet,
+		Dns:    networkData.Dns,
 	}
 	// set the network data and the regions data
 	network := flattenNetworkData([]perimeter81Sdk.CreateNetworkPayload{CreateNetworkPayload})

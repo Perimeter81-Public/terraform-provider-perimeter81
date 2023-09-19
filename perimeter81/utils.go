@@ -153,6 +153,8 @@ func flattenGateways(gatewaysItems []perimeter81Sdk.Gateway) []interface{} {
 			gateway["name"] = gatewayItems.Name
 			gateway["idle"] = gatewayItems.Idle
 			gateway["id"] = gatewayItems.Id
+			gateway["dns"] = gatewayItems.Dns
+			gateway["ip"] = gatewayItems.Ip
 			gateways[i] = gateway
 		}
 		return gateways
@@ -176,6 +178,7 @@ func flattenNetworkData(networkItems []perimeter81Sdk.CreateNetworkPayload) []in
 			network["name"] = networkItem.Name
 			network["tags"] = networkItem.Tags
 			network["subnet"] = networkItem.Subnet
+			network["dns"] = networkItem.Dns
 			networks[i] = network
 		}
 
@@ -201,6 +204,8 @@ func flattenNetworkRegions(regionItems []perimeter81Sdk.CreateRegionInNetworkloa
 			region["cpregion_id"] = regionItem.CpRegionId
 			region["region_id"] = regionItem.RegionID
 			region["idle"] = regionItem.Idle
+			region["name"] = regionItem.Name
+			region["dns"] = regionItem.Dns
 			regions[i] = region
 		}
 
@@ -476,23 +481,25 @@ func getTunnelId(ctx context.Context, networkId string, tunnelBody perimeter81Sd
 }
 
 /*
-getGatewayId get the gateway id
+getGatewayInfo get the gateway info
   - @param ctx context.Context - the context
   - @param networkId string - the network id
   - @param regionId string - the region id
   - @param client perimeter81Sdk.APIClient - the client
   - @param diags diag.Diagnostics - the diagnostics
 
-@return string - the gateway id, diag.Diagnostics - the diagnostics
+@return string - the gateway id, the gateway dns, the gateway ip,  diag.Diagnostics - the diagnostics
 */
-func getGatewayId(ctx context.Context, networkId string, regionId string, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (string, diag.Diagnostics) {
+func getGatewayInfo(ctx context.Context, networkId string, regionId string, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (string, string, string, diag.Diagnostics) {
 	network, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to fetch network", err)
-		return "", diags
+		return "", "", "", diags
 	}
 	// find the gateway id based on that least recently created gateway
 	var gatewayId string
+	var gatewayDns string
+	var gatewayIp string
 	for _, region := range network.Regions {
 		if region.Id == regionId {
 			latest, _ := time.Parse("2006-01-02T15:04:05.000Z", region.Instances[0].CreatedAt)
@@ -502,11 +509,13 @@ func getGatewayId(ctx context.Context, networkId string, regionId string, client
 				if currentTime.After(latest) {
 					latest = currentTime
 					gatewayId = gateway.Id
+					gatewayDns = gateway.Dns
+					gatewayIp = gateway.Ip
 				}
 			}
 		}
 	}
-	return gatewayId, diags
+	return gatewayId, gatewayDns, gatewayIp, diags
 }
 
 /*
@@ -545,19 +554,19 @@ func getRedundantTunnelId(ctx context.Context, networkId string, tunnelBody peri
 }
 
 /*
-	setNetworkRegionIds set the network region ids
+	setNetworkRegionInfos set the network region infos
 	 - @param regionsData perimeter81Sdk.RegionsList - the regions data
 	 - @param networkData perimeter81Sdk.Network - the network data
 	 - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions
 
 @return void
 */
-func setNetworkRegionIds(regionsData perimeter81Sdk.RegionsList, networkData perimeter81Sdk.Network, regions []perimeter81Sdk.CreateRegionInNetworkload) {
+func setNetworkRegionInfos(regionsData perimeter81Sdk.RegionsList, networkData perimeter81Sdk.Network, regions []perimeter81Sdk.CreateRegionInNetworkload) {
 	newRegionsData := make([]perimeter81Sdk.CreateRegionInNetworkload, 0)
 	for _, networkRegions := range networkData.Regions {
 		for _, regionData := range regionsData.Regions {
 			if networkRegions.Name == regionData.Name {
-				newRegionsData = append(newRegionsData, perimeter81Sdk.CreateRegionInNetworkload{RegionID: networkRegions.Id, CpRegionId: regionData.Id})
+				newRegionsData = append(newRegionsData, perimeter81Sdk.CreateRegionInNetworkload{RegionID: networkRegions.Id, CpRegionId: regionData.Id, Dns: networkRegions.Dns, Name: networkRegions.Name})
 			}
 		}
 	}
@@ -565,6 +574,8 @@ func setNetworkRegionIds(regionsData perimeter81Sdk.RegionsList, networkData per
 		for _, networkRegions := range newRegionsData {
 			if regionData.CpRegionId == networkRegions.CpRegionId {
 				regions[index].RegionID = networkRegions.RegionID
+				regions[index].Dns = networkRegions.Dns
+				regions[index].Name = networkRegions.Name
 			}
 		}
 	}
@@ -616,6 +627,8 @@ func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, g
 		}
 		statusId := getIdFromUrl(status.StatusUrl)
 		var gatewayId string
+		var gatewayDns string
+		var gatewayIp string
 		for {
 			var networkStatus perimeter81Sdk.AsyncOperationStatus
 			networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
@@ -623,12 +636,14 @@ func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, g
 				return diags, err
 			}
 			if networkStatus.Completed {
-				gatewayId, diags = getGatewayId(ctx, network_id, region_id, *client, diags)
+				gatewayId, gatewayDns, gatewayIp, diags = getGatewayInfo(ctx, network_id, region_id, *client, diags)
 				break
 			}
 			time.Sleep(60 * time.Second)
 		}
 		gateways[index].Id = gatewayId
+		gateways[index].Dns = gatewayDns
+		gateways[index].Ip = gatewayIp
 	}
 	return diags, nil
 }
@@ -866,6 +881,8 @@ func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sd
 			region := perimeter81Sdk.CreateRegionInNetworkload{}
 			region.Idle = networkData.IsDefault
 			region.RegionID = regionItem.Id
+			region.Name = regionItem.Name
+			region.Dns = regionItem.Dns
 			for _, regionInfo := range regionsData.Regions {
 				if regionInfo.DisplayName == regionItem.Name {
 					region.CpRegionId = regionInfo.Id

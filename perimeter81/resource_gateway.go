@@ -51,6 +51,14 @@ func resourceGateway() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"dns": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"idle": {
 							Type:     schema.TypeBool,
 							Required: true,
@@ -100,6 +108,8 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 			Idle: false,
 			Id:   gateway.Id,
 			Name: "$" + gateway.Id + "$",
+			Dns: gateway.Dns,
+			Ip: gateway.Ip,
 		})
 	}
 	// set the gateway and ids after getting the gateway id to the resource data
