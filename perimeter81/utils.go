@@ -565,7 +565,7 @@ func setNetworkRegionInfos(regionsData perimeter81Sdk.RegionsList, networkData p
 	newRegionsData := make([]perimeter81Sdk.CreateRegionInNetworkload, 0)
 	for _, networkRegions := range networkData.Regions {
 		for _, regionData := range regionsData.Regions {
-			if networkRegions.Name == regionData.Name {
+			if networkRegions.Name == regionData.DisplayName {
 				newRegionsData = append(newRegionsData, perimeter81Sdk.CreateRegionInNetworkload{RegionID: networkRegions.Id, CpRegionId: regionData.Id, Dns: networkRegions.Dns, Name: networkRegions.Name})
 			}
 		}
