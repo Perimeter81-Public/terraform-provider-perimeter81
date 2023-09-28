@@ -54,6 +54,16 @@ func resourceWireguard() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"vault": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"request_config_token": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"updated_at": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -167,7 +177,7 @@ func resourceWireguardCreate(ctx context.Context, d *schema.ResourceData, m inte
 	}
 	d.SetId(wireguardTunnelId)
 
-	return diags
+	return resourceWireguardRead(ctx, d, m)
 }
 
 /*
@@ -198,6 +208,11 @@ func resourceWireguardRead(ctx context.Context, d *schema.ResourceData, m interf
 
 	// get the wireguard tunnel and check for errors
 	tunnel, _, err := client.WireguardApi.GetWireguardTunnel(ctx, networkId, tunnelId)
+	networkData, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
+	instances := getGatewaysInArray(tunnel.RegionID, networkData)
+	instance := getInstanceFromInstances(tunnel.GatewayID, instances)
+	requestConfigToken, vault := getWireguardConfigsFromNetwork(tunnelId, *instance)
+
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read wireguard tunnel", err)
@@ -234,6 +249,14 @@ func resourceWireguardRead(ctx context.Context, d *schema.ResourceData, m interf
 	if err := d.Set("remote_subnets", tunnel.RemoteSubnets); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set remotesubnets", err)
+	}
+	if err := d.Set("request_config_token", requestConfigToken); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set requestConfigToken", err)
+	}
+	if err := d.Set("vault", vault); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set vault", err)
 	}
 	d.SetId(tunnelId)
 

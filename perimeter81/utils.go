@@ -913,3 +913,37 @@ func getGatewaysInArray(regionId string, network perimeter81Sdk.Network) []perim
 	}
 	return clons
 }
+
+/*
+getTunnelFromNetwork get the wireguard tunnel configs
+  - @param tunnelId string - the tunnel id
+  - @param network perimeter81Sdk.NetworkInstance - the network instance that has the configs
+
+@return string,string - the result
+*/
+func getWireguardConfigsFromNetwork(tunnelId string, instances perimeter81Sdk.NetworkInstance) (string, string) {
+
+	for _, tunnel := range instances.Tunnels {
+		if tunnel.Id == tunnelId {
+			return tunnel.RequestConfigToken, tunnel.Vault
+		}
+	}
+	return "", ""
+}
+
+/*
+getInstanceFromInstances get the gateway of gateways array
+  - @param tunnelId string - the tunnel id
+  - @param network []perimeter81Sdk.NetworkInstance - the network that has the gateways
+
+@return perimeter81Sdk.NetworkInstance - the result
+*/
+func getInstanceFromInstances(gatewayId string, instances []perimeter81Sdk.NetworkInstance) *perimeter81Sdk.NetworkInstance {
+
+	for _, instance := range instances {
+		if instance.Id == gatewayId {
+			return &instance
+		}
+	}
+	return nil
+}

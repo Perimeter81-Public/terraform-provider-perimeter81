@@ -65,6 +65,18 @@ Optional:
 - `subnet` (String) Subnet to associate
 - `tags` (List of String) List of tags for the network Resource
 
+## Attribute Reference
+
+The `network` configuration block exports the following attributes:
+
+- `subnet` - the network subnets
+- `dns` - the DNS name of the network
+
+The `regions` configuration block exports the following attributes:
+
+- `dns` - the DNS name of the region
+- `region_id` - the regionId of the region
+
 ## import
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Network with all of its regions using Network ID (networkId). For example:

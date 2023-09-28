@@ -67,6 +67,13 @@ Read-Only:
 
 - `id` (String) The ID of this resource.
 
+## Attribute Reference
+
+The `gateways` configuration block exports the following attributes:
+
+- `ip` - the IP address of the gateway
+- `dns` - the DNS name of the gateway
+
 ## import
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Gateways of a specific Region using Network ID (networkId) and Region ID (regionId). For example:

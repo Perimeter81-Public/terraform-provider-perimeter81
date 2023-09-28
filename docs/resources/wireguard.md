@@ -57,6 +57,13 @@ resource "perimeter81_wireguard" "wgd1" {
 }
 ```
 
+## Attribute Reference
+
+This resource exports the following attributes in addition to the arguments above:
+
+- `vault` - the tunnel vault
+- `request_config_token` - the tunnel request config token
+
 ## import
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Wireguard tunnel using Network ID (networkId) and Tunnel ID (tunnelId). For example:
