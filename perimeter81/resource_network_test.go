@@ -27,9 +27,8 @@ func TestAccNetwork_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   randNameNetwork,
-						Tags:   []string{"test"},
-						Subnet: "10.30.0.90/16",
+						Name: randNameNetwork,
+						Tags: []string{"test"},
 					}),
 				),
 			},
@@ -38,9 +37,8 @@ func TestAccNetwork_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNetworkExists("perimeter81_network.n", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
-						Name:   randNameNetworkUpdated,
-						Tags:   []string{"test", "updated"},
-						Subnet: "10.30.0.90/16",
+						Name: randNameNetworkUpdated,
+						Tags: []string{"test", "updated"},
 					}),
 				),
 			},
@@ -71,9 +69,8 @@ func testAccCheckNetworkExists(n string, network *perimeter81Sdk.Network) resour
 }
 
 type testAccNetworkExpectedAttributes struct {
-	Name   string
-	Tags   []string
-	Subnet string
+	Name string
+	Tags []string
 }
 
 func testAccCheckNetworkAttributes(network *perimeter81Sdk.Network, want *testAccNetworkExpectedAttributes) resource.TestCheckFunc {
@@ -96,7 +93,6 @@ resource "perimeter81_network" "n" {
 	network {
 		name = "%s"
 		tags = ["test"]
-		subnet = "10.30.0.90/16"
 	}
 	region {
 		cpregion_id = "r2Epw6OJsx"
@@ -113,7 +109,6 @@ resource "perimeter81_network" "n" {
 	network {
 		name = "%s"
 		tags = ["test", "updated"]
-		subnet = "10.30.0.90/16"
 	}
 	region {
 		cpregion_id = "r2Epw6OJsx"
