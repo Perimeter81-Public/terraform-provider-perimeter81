@@ -131,12 +131,14 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 	network := d.Get("network").([]interface{})[0].(map[string]interface{})
 	name := network["name"].(string)
 	tags := flattenStringsArrayData(network["tags"].([]interface{}))
+	subnet := network["subnet"].(string)
 	regions := flattenRegionsData(d.Get("region").([]interface{}))
 
 	// create the network payload
 	CreateNetworkPayload := perimeter81Sdk.CreateNetworkPayload{
 		Name: name,
 		Tags: tags,
+		Subnet: subnet,
 	}
 	DeployNetworkPayload := perimeter81Sdk.DeployNetworkPayload{
 		Network: &CreateNetworkPayload,
