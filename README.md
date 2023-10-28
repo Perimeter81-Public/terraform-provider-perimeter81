@@ -1,6 +1,6 @@
 # Terraform Provider perimeter81
 
-This provider is built to handel terraform for perimeter81 [perimeter81](https://www.perimeter81.com/)
+This provider is built to handle terraform for perimeter81 [perimeter81](https://www.perimeter81.com/)
 
 ## Requirements
 
