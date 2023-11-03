@@ -947,3 +947,19 @@ func getInstanceFromInstances(gatewayId string, instances []perimeter81Sdk.Netwo
 	}
 	return nil
 }
+
+/*
+setDefaultGatewayIpForRegions set the default gateway ip for regions
+  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the region list
+  - @param networkData []perimeter81Sdk.Network - the network data
+
+@return perimeter81Sdk.NetworkInstance - the result
+*/
+func setDefaultGatewayIpForRegions(regions []perimeter81Sdk.CreateRegionInNetworkload, networkData perimeter81Sdk.Network) []perimeter81Sdk.CreateRegionInNetworkload {
+
+	for index, region := range regions {
+		gateways := getGatewaysInArray(region.RegionID, networkData)
+		regions[index].DefaultGatewayIp = gateways[0].Ip
+	}
+	return regions
+}

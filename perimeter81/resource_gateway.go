@@ -98,12 +98,12 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 	}
 
 	// get the gateways that are available inside that region and validate
-	gatways := getGatewaysInArray(ids[1], networkData)
-	if len(gatways) == 0 {
+	gateways := getGatewaysInArray(ids[1], networkData)
+	if len(gateways) == 0 {
 		return nil, fmt.Errorf("could not import gateways please make sure that the netwrok_id and the region_id are correct\n")
 	}
 	newGateways := make([]perimeter81Sdk.Gateway, 0)
-	for _, gateway := range gatways {
+	for _, gateway := range gateways {
 		newGateways = append(newGateways, perimeter81Sdk.Gateway{
 			Idle: false,
 			Id:   gateway.Id,

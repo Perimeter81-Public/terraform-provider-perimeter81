@@ -75,6 +75,10 @@ func resourceNetwork() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"default_gateway_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"dns": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -232,6 +236,7 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 	// set the network data and the regions data
 	network := flattenNetworkData([]perimeter81Sdk.CreateNetworkPayload{CreateNetworkPayload})
+	regions = setDefaultGatewayIpForRegions(regions, networkData)
 	if err := d.Set("network", network); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Network data", err)

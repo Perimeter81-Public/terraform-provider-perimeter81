@@ -7,8 +7,8 @@ github.com/Masterminds/sprig/v3 v3.2.1/go.mod h1:UoaO7Yp8KlPnJIYWTFkMaqPUYKTfGFP
 github.com/Masterminds/sprig/v3 v3.2.2 h1:17jRggJu518dr3QaafizSXOjKYp94wKfABxUmyxvxX8=
 github.com/Masterminds/sprig/v3 v3.2.2/go.mod h1:UoaO7Yp8KlPnJIYWTFkMaqPUYKTfGFPhxNuwnnxkKlk=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
-github.com/Perimeter81-Public/perimeter-81-client-sdk v1.14.3 h1:Bn6JeJQ1U7QPA3arcmmCEYkJDVvXOorWTblzChA/k5Q=
-github.com/Perimeter81-Public/perimeter-81-client-sdk v1.14.3/go.mod h1:Yw3Qn0vE5wXee+Cc5cZ8Qtu9jgZ0m+67ecRFHIx2UTQ=
+github.com/Perimeter81-Public/perimeter-81-client-sdk v1.17.0 h1:fhJKGu+Tq3DpjvqFaSq55WITFhuObJ4i4VyQzJ/augg=
+github.com/Perimeter81-Public/perimeter-81-client-sdk v1.17.0/go.mod h1:Yw3Qn0vE5wXee+Cc5cZ8Qtu9jgZ0m+67ecRFHIx2UTQ=
 github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 h1:wPbRQzjjwFc0ih8puEVAOFGELsn1zoIIYdxvML7mDxA=
 github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8/go.mod h1:I0gYDMZ6Z5GRU7l58bNFSkPTFN6Yl12dsUlAZ8xy98g=
 github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ=
