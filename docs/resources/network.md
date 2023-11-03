@@ -75,6 +75,7 @@ The `network` configuration block exports the following attributes:
 The `regions` configuration block exports the following attributes:
 
 - `dns` - the DNS name of the region
+- `default_gateway_ip` - the default gateway ip of the region
 - `region_id` - the regionId of the region
 
 ## import
