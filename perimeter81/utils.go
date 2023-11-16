@@ -953,7 +953,7 @@ setDefaultGatewayIpForRegions set the default gateway ip for regions
   - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the region list
   - @param networkData []perimeter81Sdk.Network - the network data
 
-@return perimeter81Sdk.NetworkInstance - the result
+@return perimeter81Sdk.CreateRegionInNetworkload - the result
 */
 func setDefaultGatewayIpForRegions(regions []perimeter81Sdk.CreateRegionInNetworkload, networkData perimeter81Sdk.Network) []perimeter81Sdk.CreateRegionInNetworkload {
 
