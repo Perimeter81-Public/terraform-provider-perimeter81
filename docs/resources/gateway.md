@@ -74,6 +74,8 @@ The `gateways` configuration block exports the following attributes:
 - `ip` - the IP address of the gateway
 - `dns` - the DNS name of the gateway
 
+Note: The `gateway` that has index 0 will be the default gateway for the region configuration block.
+
 ## import
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import Gateways of a specific Region using Network ID (networkId) and Region ID (regionId). For example:
