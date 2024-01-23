@@ -206,6 +206,7 @@ func flattenNetworkRegions(regionItems []perimeter81Sdk.CreateRegionInNetworkloa
 			region["idle"] = regionItem.Idle
 			region["name"] = regionItem.Name
 			region["dns"] = regionItem.Dns
+			region["default_gateway_ip"] = regionItem.DefaultGatewayIp
 			regions[i] = region
 		}
 
@@ -889,6 +890,14 @@ func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sd
 					break
 				}
 			}
+			if region.CpRegionId == "" {
+				for _, regionInfo := range regionsData.Regions {
+					if regionInfo.Name == regionItem.Name {
+						region.CpRegionId = regionInfo.Id
+						break
+					}
+				}
+			}
 			regions[i] = region
 		}
 	}
@@ -953,7 +962,7 @@ setDefaultGatewayIpForRegions set the default gateway ip for regions
   - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the region list
   - @param networkData []perimeter81Sdk.Network - the network data
 
-@return perimeter81Sdk.CreateRegionInNetworkload - the result
+@return []perimeter81Sdk.CreateRegionInNetworkload - the result
 */
 func setDefaultGatewayIpForRegions(regions []perimeter81Sdk.CreateRegionInNetworkload, networkData perimeter81Sdk.Network) []perimeter81Sdk.CreateRegionInNetworkload {
 
