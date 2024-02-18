@@ -39,10 +39,12 @@ func Provider() *schema.Provider {
 			"perimeter81_ipsec_single":    resourceIpsecSingle(),
 			"perimeter81_ipsec_redundant": resourceIpsecRedundant(),
 			"perimeter81_gateway":         resourceGateway(),
+			"perimeter81_object_services": resourceObjectServices(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"perimeter81_networks": dataSourceNetworks(),
 			"perimeter81_regions":  dataSourceRegions(),
+			"perimeter81_object_services":  dataSourceObjectServices(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
