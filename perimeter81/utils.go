@@ -110,6 +110,31 @@ func flattenRegionsData(regionItems []interface{}) []perimeter81Sdk.CreateRegion
 }
 
 /*
+flattenProtocolsData flatten Protocols data
+  - @param protocolItems []interface{} - the protocols that need to be flattened
+
+@return []perimeter81Sdk.ObjectServiceProtocolTcpudp - the flattened protocols
+*/
+func flattenProtocolsData(protocolItems []interface{}) []perimeter81Sdk.ObjectServiceProtocolTcpudp {
+	if protocolItems != nil {
+		protocols := make([]perimeter81Sdk.ObjectServiceProtocolTcpudp, len(protocolItems))
+
+		for i, protocolItem := range protocolItems {
+			protocol := perimeter81Sdk.ObjectServiceProtocolTcpudp{}
+
+			protocol.Protocol = protocolItem.(map[string]interface{})["protocol"].(string)
+			protocol.ValueType = protocolItem.(map[string]interface{})["value_type"].(string)
+			protocol.Value = flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
+			protocols[i] = protocol
+		}
+
+		return protocols
+	}
+
+	return make([]perimeter81Sdk.ObjectServiceProtocolTcpudp, 0)
+}
+
+/*
 flattenGatewaysData flatten gateways data
   - @param gatewaysItems []interface{} - the gateways data that need to be flattened
 
@@ -211,6 +236,31 @@ func flattenNetworkRegions(regionItems []perimeter81Sdk.CreateRegionInNetworkloa
 		}
 
 		return regions
+	}
+
+	return make([]interface{}, 0)
+}
+
+/*
+flattenObjectServicesProtocols flatten object services protocols
+  - @param protocolItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj - the object services protocols that need to be flattened
+
+@return []interface{} - the flattened  network regions
+*/
+func flattenObjectServicesProtocols(protocolItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj) []interface{} {
+	if protocolItems != nil {
+		protocols := make([]interface{}, len(protocolItems))
+
+		for i, protocolItem := range protocolItems {
+			protocol := make(map[string]interface{})
+
+			protocol["protocol"] = protocolItem.Protocol
+			protocol["value_type"] = protocolItem.ValueType
+			protocol["value"] = protocolItem.Value
+			protocols[i] = protocol
+		}
+
+		return protocols
 	}
 
 	return make([]interface{}, 0)
@@ -924,6 +974,22 @@ func getGatewaysInArray(regionId string, network perimeter81Sdk.Network) []perim
 }
 
 /*
+getCurrentObjectServicesInArray get the current object services from all the services
+  - @param objectsServices perimeter81Sdk.ObjectsServicesResponse - the objects services in the system
+  - @param objectServicesId string - the object services id
+
+@return *perimeter81Sdk.ObjectsServicesResponseObj - the result
+*/
+func getCurrentObjectServicesInArray(objectsServices *perimeter81Sdk.ObjectsServicesResponse, objectServicesId string) *perimeter81Sdk.ObjectsServicesResponseObj {
+	for _, service := range objectsServices.Data {
+		if service.Id == objectServicesId {
+			return &service
+		}
+	}
+	return nil
+}
+
+/*
 getTunnelFromNetwork get the wireguard tunnel configs
   - @param tunnelId string - the tunnel id
   - @param network perimeter81Sdk.NetworkInstance - the network instance that has the configs
@@ -971,4 +1037,47 @@ func setDefaultGatewayIpForRegions(regions []perimeter81Sdk.CreateRegionInNetwor
 		regions[index].DefaultGatewayIp = gateways[0].Ip
 	}
 	return regions
+}
+
+/*
+flattenObjectServicesDataSource flatten object Services data
+  - @param objectServicesItems []perimeter81Sdk.ObjectsServicesResponseObj - the object services that need to be flattened
+
+@return []interface{} - the flattened object services data
+*/
+func flattenObjectServicesData(objectServicesItems []perimeter81Sdk.ObjectsServicesResponseObj) []interface{} {
+	if objectServicesItems != nil {
+		objectServices := make([]interface{}, len(objectServicesItems))
+		for i, objectServicesItem := range objectServicesItems {
+			objectService := make(map[string]interface{})
+			objectService["name"] = objectServicesItem.Name
+			objectService["description"] = objectServicesItem.Name
+			objectService["protocols"] = flattenProtocolsDataSourceData(objectServicesItem.Protocols)
+			objectServices[i] = objectService
+		}
+		return objectServices
+	}
+	return make([]interface{}, 0)
+}
+
+/*
+flattenProtocolsDataSourceData flatten protocols data
+  - @param objectServicesItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj - the object services that need to be flattened
+
+@return []interface{} - the flattened object services data
+*/
+func flattenProtocolsDataSourceData(protocolItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj) []interface{} {
+	if protocolItems != nil {
+		protocols := make([]interface{}, len(protocolItems))
+		for i, protocolItem := range protocolItems {
+			protocol := make(map[string]interface{})
+			protocol["protocol"] = protocolItem.Protocol
+			protocol["value_type"] = protocolItem.ValueType
+			protocol["value"] = protocolItem.Value
+			// protocol.Value = flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
+			protocols[i] = protocol
+		}
+		return protocols
+	}
+	return make([]interface{}, 0)
 }
