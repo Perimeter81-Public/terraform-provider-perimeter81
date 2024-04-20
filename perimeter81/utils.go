@@ -1074,10 +1074,45 @@ func flattenProtocolsDataSourceData(protocolItems []perimeter81Sdk.ObjectsServic
 			protocol["protocol"] = protocolItem.Protocol
 			protocol["value_type"] = protocolItem.ValueType
 			protocol["value"] = protocolItem.Value
-			// protocol.Value = flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
 			protocols[i] = protocol
 		}
 		return protocols
+	}
+	return make([]interface{}, 0)
+}
+/*
+getCurrentObjectAddressesInArray get the current object addresses from all the addresses
+  - @param objectsAddresses perimeter81Sdk.ObjectsAddressesResponse - the objects addresses in the system
+  - @param objectAddressesId string - the object addresses id
+@return *perimeter81Sdk.ObjectsAddressesResponseObj - the result
+*/
+func getCurrentObjectAddressesInArray(objectsAddresses *perimeter81Sdk.ObjectsAddressesResponse, objectAddressesId string) *perimeter81Sdk.ObjectsAddressObj {
+	for _, address := range objectsAddresses.Data {
+		if address.Id == objectAddressesId {
+			return &address
+		}
+	}
+	return nil
+}
+/*
+flattenObjectAddressesData flatten ObjectAddresses data
+  - @param objectAddressesItems []perimeter81Sdk.ObjectsAddressesObj - the object services that need to be flattened
+
+@return []interface{} - the flattened object addressess data
+*/
+func flattenObjectAddressesData(objectAddressesItems []perimeter81Sdk.ObjectsAddressObj) []interface{} {
+	if objectAddressesItems != nil {
+		objectAddresses := make([]interface{}, len(objectAddressesItems))
+		for i, objectAddressesItem := range objectAddressesItems {
+			objectAddress := make(map[string]interface{})
+			objectAddress["name"] = objectAddressesItem.Name
+			objectAddress["description"] = objectAddressesItem.Name
+			objectAddress["value_type"] = objectAddressesItem.ValueType
+			objectAddress["value"] = objectAddressesItem.Value
+			objectAddress["ip_version"] = objectAddressesItem.IpVersion
+			objectAddresses[i] = objectAddress
+		}
+		return objectAddresses
 	}
 	return make([]interface{}, 0)
 }

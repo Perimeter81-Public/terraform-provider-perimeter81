@@ -28,7 +28,7 @@ description: |-
 Read-Only:
 
 - `id` (String) The ID of the datasource
-- `name` (String) The name of the network resource
+- `name` (String) The name of the object services resource
 - `protocols` (Block List) (see [below for nested schema](#nestedblock--protocols))
 - `description` (String) The description of the added object services resource
 
