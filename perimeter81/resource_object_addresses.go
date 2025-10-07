@@ -113,7 +113,7 @@ func resourceObjectAddressesCreate(ctx context.Context, d *schema.ResourceData, 
 	}
 
 	d.SetId(objectAddresses.Id)
-	return resourceObjectServicesRead(ctx, d, m)
+	return resourceObjectAddressesRead(ctx, d, m)
 }
 
 /*

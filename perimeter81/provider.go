@@ -40,6 +40,7 @@ func Provider() *schema.Provider {
 			"perimeter81_ipsec_redundant": resourceIpsecRedundant(),
 			"perimeter81_gateway":         resourceGateway(),
 			"perimeter81_object_services": resourceObjectServices(),
+			"perimeter81_object_addresses": resourceObjectAddresses(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"perimeter81_networks": dataSourceNetworks(),
