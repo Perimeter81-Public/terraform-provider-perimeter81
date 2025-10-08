@@ -32,9 +32,8 @@ func Provider() *schema.Provider {
 			"perimeter81_object_addresses": resourceObjectAddresses(),
 			"perimeter81_object_services":  resourceObjectServices(),
 			"perimeter81_openvpn":          resourceOpenvpn(),
+			"perimeter81_region":           resourceRegion(),
 			"perimeter81_wireguard":        resourceWireguard(),
-			"perimeter81_network_policy":   resourceNetworkPolicy(),
-
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"perimeter81_networks":         dataSourceNetworks(),
@@ -57,8 +56,9 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		return nil, diag.Errorf("api_key must be set")
 	}
 
-	// NewConfiguration expects (apiKey, baseURL) as arguments
-	config := perimeter81Sdk.NewConfiguration(apiKey, baseURL)
+	config := perimeter81Sdk.NewConfiguration()
+	config.AddDefaultHeader("Authorization", "Bearer "+apiKey)
+	config.BasePath = baseURL
 
 	client := perimeter81Sdk.NewAPIClient(config)
 

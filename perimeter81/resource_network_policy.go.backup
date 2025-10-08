@@ -1,0 +1,266 @@
+package perimeter81
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceNetworkPolicy() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: resourceNetworkPolicyUpdate,
+		ReadContext:   resourceNetworkPolicyRead,
+		UpdateContext: resourceNetworkPolicyUpdate,
+		DeleteContext: resourceNetworkPolicyDelete,
+
+		Schema: map[string]*schema.Schema{
+			"last_updated": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"network_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"allowed": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"policy_rules": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"allowed": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"sources": {
+							Type:     schema.TypeList,
+							Required: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"users": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"groups": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"destinations": {
+							Type:     schema.TypeList,
+							Required: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"users": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"groups": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"services": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+		},
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+	}
+}
+
+func resourceNetworkPolicyRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*perimeter81Sdk.APIClient)
+	networkId := d.Id()
+
+	policy, _, err := client.FirewallPolicyApi.GetFirewallPolicy(ctx, networkId)
+	if err != nil {
+		d.SetId("")
+		return diag.FromErr(fmt.Errorf("unable to read firewall policy: %w", err))
+	}
+
+	d.Set("enabled", policy.Enabled)
+	d.Set("allowed", policy.Allowed)
+	d.Set("network_id", networkId)
+
+	if err := d.Set("policy_rules", flattenPolicyRules(policy.PolicyRules)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
+}
+
+func resourceNetworkPolicyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*perimeter81Sdk.APIClient)
+	networkId := d.Get("network_id").(string)
+
+	payload := buildPolicyPayload(d)
+
+	_, _, err := client.FirewallPolicyApi.UpdateFirewallPolicy(ctx, payload, networkId)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("unable to update firewall policy: %w", err))
+	}
+
+	d.Set("last_updated", time.Now().Format(time.RFC850))
+	d.SetId(networkId)
+
+	return resourceNetworkPolicyRead(ctx, d, m)
+}
+
+func resourceNetworkPolicyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*perimeter81Sdk.APIClient)
+	networkId := d.Id()
+
+	emptyPolicy := perimeter81Sdk.FirewallPolicy{
+		Enabled:     false,
+		Allowed:     true,
+		PolicyRules: []perimeter81Sdk.FirewallPolicyRule{},
+	}
+
+	_, _, err := client.FirewallPolicyApi.UpdateFirewallPolicy(ctx, emptyPolicy, networkId)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("unable to reset firewall policy: %w", err))
+	}
+
+	d.SetId("")
+	return nil
+}
+
+// --- Helper Functions ---
+
+func buildPolicyPayload(d *schema.ResourceData) perimeter81Sdk.FirewallPolicy {
+	var rules []perimeter81Sdk.FirewallPolicyRule
+	if v, ok := d.GetOk("policy_rules"); ok {
+		rawRules := v.([]interface{})
+		for _, rawRule := range rawRules {
+			ruleData := rawRule.(map[string]interface{})
+
+			var sources perimeter81Sdk.SourcesAndDestinations
+			if srcList, ok := ruleData["sources"].([]interface{}); ok && len(srcList) > 0 {
+				srcMap := srcList[0].(map[string]interface{})
+				sources.Users = expandStringList(srcMap["users"].([]interface{}))
+				sources.Groups = expandStringList(srcMap["groups"].([]interface{}))
+			}
+
+			var destinations perimeter81Sdk.SourcesAndDestinations
+			if dstList, ok := ruleData["destinations"].([]interface{}); ok && len(dstList) > 0 {
+				dstMap := dstList[0].(map[string]interface{})
+				destinations.Users = expandStringList(dstMap["users"].([]interface{}))
+				destinations.Groups = expandStringList(dstMap["groups"].([]interface{}))
+			}
+
+			rule := perimeter81Sdk.FirewallPolicyRule{
+				Name:         ruleData["name"].(string),
+				Enabled:      ruleData["enabled"].(bool),
+				Allowed:      ruleData["allowed"].(bool),
+				Sources:      &sources,
+				Destinations: &destinations,
+				Services:     expandStringList(ruleData["services"].([]interface{})),
+			}
+			rules = append(rules, rule)
+		}
+	}
+
+	payload := perimeter81Sdk.FirewallPolicy{
+		Enabled:     d.Get("enabled").(bool),
+		Allowed:     d.Get("allowed").(bool),
+		PolicyRules: rules,
+	}
+	return payload
+}
+
+func flattenPolicyRules(apiRules []perimeter81Sdk.FirewallPolicyRule) []interface{} {
+	if apiRules == nil {
+		return make([]interface{}, 0)
+	}
+
+	flattenedRules := make([]interface{}, len(apiRules))
+	for i, rule := range apiRules {
+		sources := []interface{}{}
+		destinations := []interface{}{}
+
+		if rule.Sources != nil {
+			sources = []interface{}{
+				map[string]interface{}{
+					"users":  rule.Sources.Users,
+					"groups": rule.Sources.Groups,
+				},
+			}
+		}
+
+		if rule.Destinations != nil {
+			destinations = []interface{}{
+				map[string]interface{}{
+					"users":  rule.Destinations.Users,
+					"groups": rule.Destinations.Groups,
+				},
+			}
+		}
+
+		ruleMap := map[string]interface{}{
+			"id":           rule.Id,
+			"name":         rule.Name,
+			"enabled":      rule.Enabled,
+			"allowed":      rule.Allowed,
+			"sources":      sources,
+			"destinations": destinations,
+			"services":     rule.Services,
+		}
+		flattenedRules[i] = ruleMap
+	}
+	return flattenedRules
+}
+
+func expandStringList(list []interface{}) []string {
+	result := make([]string, len(list))
+	for i, v := range list {
+		result[i] = v.(string)
+	}
+	return result
+}

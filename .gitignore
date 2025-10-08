@@ -66,3 +66,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 terraform
+
+# Ignore .backup files
+.backup
