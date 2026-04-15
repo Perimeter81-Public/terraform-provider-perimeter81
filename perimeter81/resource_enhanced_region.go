@@ -20,6 +20,7 @@ func resourceEnhancedRegion() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceEnhancedRegionCreate,
 		ReadContext:   resourceEnhancedRegionRead,
+		UpdateContext: resourceEnhancedRegionUpdate,
 		DeleteContext: resourceEnhancedRegionDelete,
 		Schema: map[string]*schema.Schema{
 			"network_id": {
@@ -38,7 +39,6 @@ func resourceEnhancedRegion() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     1,
-				ForceNew:    true,
 				Description: "The number of scale units for the region. Higher values provide greater throughput and connection capacity. Defaults to 1.",
 			},
 			"idle": {
@@ -153,6 +153,89 @@ func resourceEnhancedRegionRead(ctx context.Context, d *schema.ResourceData, m i
 	}
 
 	return diags
+}
+
+/*
+resourceEnhancedRegionUpdate Update an Enhanced Region's scale units.
+  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+  - @param d *schema.ResourceData - the terraform resource data
+  - @param m interface{} - the terraform meta data that contains the client
+
+@return diag.Diagnostics
+*/
+func resourceEnhancedRegionUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	client := m.(*perimeter81Sdk.APIClient)
+	ctx = context.Background()
+
+	if !d.HasChange("scale_units") {
+		return resourceEnhancedRegionRead(ctx, d, m)
+	}
+
+	networkId := d.Get("network_id").(string)
+	regionId := d.Id()
+
+	oldVal, newVal := d.GetChange("scale_units")
+	oldScaleUnits := int32(oldVal.(int))
+	newScaleUnits := int32(newVal.(int))
+
+	if newScaleUnits > oldScaleUnits {
+		// Increase scale units one unit at a time
+		unitsToAdd := newScaleUnits - oldScaleUnits
+		payload := perimeter81Sdk.ScaleUnitsOperation{
+			UnitType:        "standard",
+			ScaleUnitsCount: unitsToAdd,
+		}
+
+		status, _, err := client.EnhancedRegionsAPI.IncreaseScaleUnit(ctx, networkId, regionId).ScaleUnitsOperation(payload).Execute()
+		if err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to increase Enhanced Region scale units", err)
+		}
+
+		statusId := getIdFromUrl(status.GetStatusUrl())
+		for {
+			var networkStatus perimeter81Sdk.AsyncOperationStatus
+			networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
+			if err != nil {
+				d.Partial(true)
+				return diags
+			}
+			if networkStatus.GetCompleted() {
+				break
+			}
+			time.Sleep(60 * time.Second)
+		}
+	} else if newScaleUnits < oldScaleUnits {
+		// Reduce scale units
+		unitsToRemove := oldScaleUnits - newScaleUnits
+		payload := perimeter81Sdk.ScaleUnitsOperation{
+			UnitType:        "standard",
+			ScaleUnitsCount: unitsToRemove,
+		}
+
+		status, _, err := client.EnhancedRegionsAPI.ReduceScaleUnit(ctx, networkId, regionId).ScaleUnitsOperation(payload).Execute()
+		if err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to reduce Enhanced Region scale units", err)
+		}
+
+		statusId := getIdFromUrl(status.GetStatusUrl())
+		for {
+			var networkStatus perimeter81Sdk.AsyncOperationStatus
+			networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
+			if err != nil {
+				d.Partial(true)
+				return diags
+			}
+			if networkStatus.GetCompleted() {
+				break
+			}
+			time.Sleep(60 * time.Second)
+		}
+	}
+
+	return resourceEnhancedRegionRead(ctx, d, m)
 }
 
 /*
