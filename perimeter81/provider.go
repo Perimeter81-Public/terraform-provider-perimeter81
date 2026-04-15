@@ -51,6 +51,8 @@ func Provider() *schema.Provider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"perimeter81_networks":                dataSourceNetworks(),
+			"perimeter81_standard_networks":       dataSourceStandardNetworks(),
+			"perimeter81_all_networks":            dataSourceAllNetworks(),
 			"perimeter81_regions":                 dataSourceRegions(),
 			"perimeter81_object_services":         dataSourceObjectServices(),
 			"perimeter81_object_addresses":        dataSourceObjectAddresses(),
