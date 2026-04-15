@@ -33,20 +33,32 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"perimeter81_network":           resourceNetwork(),
-			"perimeter81_wireguard":         resourceWireguard(),
-			"perimeter81_openvpn":           resourceOpenvpn(),
-			"perimeter81_ipsec_single":      resourceIpsecSingle(),
-			"perimeter81_ipsec_redundant":   resourceIpsecRedundant(),
-			"perimeter81_gateway":           resourceGateway(),
-			"perimeter81_object_services":   resourceObjectServices(),
-			"perimeter81_object_addresses":  resourceObjectAddresses(),
+			"perimeter81_network":                 resourceNetwork(),
+			"perimeter81_wireguard":               resourceWireguard(),
+			"perimeter81_openvpn":                 resourceOpenvpn(),
+			"perimeter81_ipsec_single":            resourceIpsecSingle(),
+			"perimeter81_ipsec_redundant":         resourceIpsecRedundant(),
+			"perimeter81_gateway":                 resourceGateway(),
+			"perimeter81_object_services":         resourceObjectServices(),
+			"perimeter81_object_addresses":        resourceObjectAddresses(),
+			"perimeter81_enhanced_network":        resourceEnhancedNetwork(),
+			"perimeter81_enhanced_region":         resourceEnhancedRegion(),
+			"perimeter81_enhanced_static_tunnel":  resourceEnhancedStaticTunnel(),
+			"perimeter81_enhanced_dynamic_tunnel": resourceEnhancedDynamicTunnel(),
+			"perimeter81_enhanced_route_table":    resourceEnhancedRouteTable(),
+			"perimeter81_application":             resourceApplication(),
+			"perimeter81_firewall_policy":         resourceFirewallPolicy(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"perimeter81_networks":          dataSourceNetworks(),
-			"perimeter81_regions":           dataSourceRegions(),
-			"perimeter81_object_services":   dataSourceObjectServices(),
-			"perimeter81_object_addresses":  dataSourceObjectAddresses(),
+			"perimeter81_networks":               dataSourceNetworks(),
+			"perimeter81_regions":                dataSourceRegions(),
+			"perimeter81_object_services":        dataSourceObjectServices(),
+			"perimeter81_object_addresses":       dataSourceObjectAddresses(),
+			"perimeter81_enhanced_networks":      dataSourceEnhancedNetworks(),
+			"perimeter81_enhanced_regions":       dataSourceEnhancedRegions(),
+			"perimeter81_applications":           dataSourceApplications(),
+			"perimeter81_route_table":            dataSourceRouteTable(),
+			"perimeter81_enhanced_route_table":   dataSourceEnhancedRouteTable(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -65,7 +77,7 @@ func providerConfigure(con context.Context, d *schema.ResourceData) (interface{}
 	apiKey := d.Get("api_key").(string)
 	baseUrl := d.Get("base_url").(string)
 
-	// Initialize the perimeter81 client sdk
+	// Initialize the Check Point Check Point SASE client SDK
 	var client interface{}
 	if apiKey != "" {
 		client = perimeter81Sdk.NewAPIClient(perimeter81Sdk.NewConfiguration(apiKey, baseUrl))
@@ -73,10 +85,10 @@ func providerConfigure(con context.Context, d *schema.ResourceData) (interface{}
 
 	// check if the client is initialized correctly
 	if client == nil {
-		log.Println("[ERROR] Initializing perimeter81 client is not completed")
+		log.Println("[ERROR] Initializing Check Point SASE client is not completed")
 		return nil, nil
 	}
-	log.Println("[INFO] Initializing perimeter81 client")
+	log.Println("[INFO] Initializing Check Point SASE client")
 
 	return client, nil
 }
@@ -85,7 +97,7 @@ var descriptions map[string]string
 
 func init() {
 	descriptions = map[string]string{
-		"api_key":  "The Api key for the Preimeter81 Public API.",
-		"base_url": "The base url for the rest api. Defaults to the US endpoint if not set.",
+		"api_key":  "The API key for the Check Point Check Point SASE Public API.",
+		"base_url": "The base URL for the Check Point SASE REST API. Defaults to the US endpoint if not set.",
 	}
 }
