@@ -22,7 +22,7 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Required:    true,
 				Sensitive:   true,
-				DefaultFunc: schema.EnvDefaultFunc("PERIMETER81_API_KEY", nil),
+				DefaultFunc: schema.EnvDefaultFunc("CHECKPOINT_SASE_API_KEY", nil),
 				Description: descriptions["api_key"],
 			},
 			"base_url": {

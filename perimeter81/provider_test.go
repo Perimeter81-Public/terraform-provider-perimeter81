@@ -13,7 +13,7 @@ var testAccProvider *schema.Provider
 func init() {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
-		"perimeter81": testAccProvider,
+		"sase": testAccProvider,
 	}
 }
 
@@ -29,7 +29,7 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("PERIMETER81_API_KEY"); v == "" {
-		t.Fatal("PERIMETER81_API_KEY must be set for acceptance tests")
+	if v := os.Getenv("CHECKPOINT_SASE_API_KEY"); v == "" {
+		t.Fatal("CHECKPOINT_SASE_API_KEY must be set for acceptance tests")
 	}
 }

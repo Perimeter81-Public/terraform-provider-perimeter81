@@ -61,10 +61,16 @@ func dataSourceCustomerCertificatesRead(ctx context.Context, d *schema.ResourceD
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	certificates, _, err := client.EnhancedNetworksAPI.EnhancedNetworksControllerV23GetNetworkCustomerCertificate(ctx).Execute()
+	certificates, resp, err := client.EnhancedNetworksAPI.EnhancedNetworksControllerV23GetNetworkCustomerCertificate(ctx).Execute()
 	if err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to get Customer Certificates", err)
+		// 409 Conflict means the tenant doesn't have enhanced networks or the feature is not enabled.
+		// Return empty list instead of failing.
+		if resp != nil && resp.StatusCode == 409 {
+			certificates = nil
+		} else {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to get Customer Certificates", err)
+		}
 	}
 
 	certData := flattenCustomerCertificates(certificates)

@@ -44,8 +44,20 @@ func dataSourceStatusRead(ctx context.Context, d *schema.ResourceData, m interfa
 
 	status, _, err := client.NetworksAPI.GetStatus(ctx).Execute()
 	if err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to get API status", err)
+		// The /v2.3/status endpoint returns plain text "Ok" which the SDK
+		// may fail to JSON-decode. If the body contains "Ok", treat it as success.
+		if apiErr, ok := err.(*perimeter81Sdk.GenericOpenAPIError); ok {
+			body := string(apiErr.Body())
+			if body == "Ok" || body == "\"Ok\"" {
+				status = "Ok"
+			} else {
+				d.Partial(true)
+				return appendErrorDiags(diags, "Unable to get API status", err)
+			}
+		} else {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to get API status", err)
+		}
 	}
 
 	if err := d.Set("status", status); err != nil {
