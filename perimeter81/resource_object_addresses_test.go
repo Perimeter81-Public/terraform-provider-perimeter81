@@ -22,7 +22,7 @@ func TestAccObjectAddresses_basic(t *testing.T) {
 			{
 				Config: testAccObjectAddressConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectAddressExists("perimeter81_object_addresses.os", &objectAddress),
+					testAccCheckObjectAddressExists("sase_object_addresses.os", &objectAddress),
 					testAccCheckObjectAddressesAttributes(&objectAddress, &testAccObjectAddressExpectedAttributes{
 						Name:        "test-os",
 						Description: "10.30.0.90/16",
@@ -34,7 +34,7 @@ func TestAccObjectAddresses_basic(t *testing.T) {
 			{
 				Config: testAccObjectAddressUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectAddressExists("perimeter81_object_addresses.oa", &objectAddress),
+					testAccCheckObjectAddressExists("sase_object_addresses.oa", &objectAddress),
 					testAccCheckObjectAddressesAttributes(&objectAddress, &testAccObjectAddressExpectedAttributes{
 						Name:        "test-os-updated",
 						Description: "10.30.0.91/16",
@@ -105,7 +105,7 @@ func testAccCheckObjectAddressesAttributes(objectAddress *perimeter81Sdk.Objects
 
 func testAccObjectAddressConfig() string {
 	config := `
-resource "perimeter81_object_addresses" "os" {
+resource "sase_object_addresses" "os" {
   name = "test-os"
   description = "10.30.0.90/16"
   value_type = "single"
@@ -117,7 +117,7 @@ resource "perimeter81_object_addresses" "os" {
 
 func testAccObjectAddressUpdateConfig() string {
 	config := `
-resource "perimeter81_object_addresses" "oa" {
+resource "sase_object_addresses" "oa" {
   name = "test-os-updated"
   description = "10.30.0.91/16"
   value_type = "list"

@@ -17,7 +17,7 @@ description: |-
 
 ### Required
 
-- `api_key` (String, Sensitive) The API key for the Check Point Check Point SASE Public API.
+- `api_key` (String, Sensitive) The API key for the Check Point SASE Public API.
 
 ### Optional
 

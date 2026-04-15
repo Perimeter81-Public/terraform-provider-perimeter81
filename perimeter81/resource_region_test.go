@@ -23,21 +23,21 @@ func TestAccRegion_basic(t *testing.T) {
 			{
 				Config: testAccRegionsConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkExists("perimeter81_network.n5", &network),
+					testAccCheckNetworkExists("sase_network.n5", &network),
 					testAccCheckRegionsCount(&network, 1),
 				),
 			},
 			{
 				Config: testAccRegionsUpdate1Config(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkExists("perimeter81_network.n5", &network),
+					testAccCheckNetworkExists("sase_network.n5", &network),
 					testAccCheckRegionsCount(&network, 2),
 				),
 			},
 			{
 				Config: testAccRegionsUpdate2Config(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkExists("perimeter81_network.n5", &network),
+					testAccCheckNetworkExists("sase_network.n5", &network),
 					testAccCheckRegionsCount(&network, 1),
 				),
 			},
@@ -57,7 +57,7 @@ func testAccCheckRegionsCount(network *perimeter81Sdk.Network, want int) resourc
 
 func testAccRegionsConfig() string {
 	config := `
-resource "perimeter81_network" "n5" {
+resource "sase_network" "n5" {
 	network {
 		name = "%s"
 		tags = ["test"]
@@ -73,7 +73,7 @@ resource "perimeter81_network" "n5" {
 
 func testAccRegionsUpdate1Config() string {
 	config := `
-resource "perimeter81_network" "n5" {
+resource "sase_network" "n5" {
 	network {
 		name = "%s"
 		tags = ["test"]
@@ -92,7 +92,7 @@ resource "perimeter81_network" "n5" {
 }
 func testAccRegionsUpdate2Config() string {
 	config := `
-resource "perimeter81_network" "n5" {
+resource "sase_network" "n5" {
 	network {
 		name = "%s"
 		tags = ["test"]

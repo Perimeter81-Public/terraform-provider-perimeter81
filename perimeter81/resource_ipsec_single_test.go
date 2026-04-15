@@ -23,7 +23,7 @@ func TestAccIpsecSingle_basic(t *testing.T) {
 			{
 				Config: testAccIpsecSingleConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckIpsecSingleExists("perimeter81_ipsec_single.ipss1", &tunnel),
+					testAccCheckIpsecSingleExists("sase_ipsec_single.ipss1", &tunnel),
 					testAccCheckIpsecSingleAttributes(&tunnel, &testAccIpSecSingleExpectedAttributes{
 						P81GatewaySubnets:    []string{"0.0.0.0/0"},
 						RemoteGatewaySubnets: []string{"0.0.0.0/0"},
@@ -50,7 +50,7 @@ func TestAccIpsecSingle_basic(t *testing.T) {
 			{
 				Config: testAccIpsecSingleUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckIpsecSingleExists("perimeter81_ipsec_single.ipss1", &tunnel),
+					testAccCheckIpsecSingleExists("sase_ipsec_single.ipss1", &tunnel),
 					testAccCheckIpsecSingleAttributes(&tunnel, &testAccIpSecSingleExpectedAttributes{
 						P81GatewaySubnets:    []string{"0.0.0.0/0"},
 						RemoteGatewaySubnets: []string{"0.0.0.0/0"},
@@ -168,7 +168,7 @@ type testAccIpSecSingleExpectedAttributes struct {
 
 func testAccIpsecSingleConfig() string {
 	config := `
-resource "perimeter81_network" "n3" {
+resource "sase_network" "n3" {
   network {
     name = "%s"
     tags = ["test"]
@@ -179,24 +179,24 @@ resource "perimeter81_network" "n3" {
   }
 }
 
-data "perimeter81_networks" "all3" {
+data "sase_networks" "all3" {
 	depends_on = [
-    	perimeter81_network.n3
+    	sase_network.n3
   	]
 }
 
-resource "perimeter81_ipsec_single" "ipss1" {
-  network_id = perimeter81_network.n3.id
+resource "sase_ipsec_single" "ipss1" {
+  network_id = sase_network.n3.id
   region_id = {
-    for network in data.perimeter81_networks.all3.networks :
+    for network in data.sase_networks.all3.networks :
     network.id => network.regions[0].id
-    if network.id == perimeter81_network.n3.id
-  }[perimeter81_network.n3.id]
+    if network.id == sase_network.n3.id
+  }[sase_network.n3.id]
   gateway_id = {
-    for network in data.perimeter81_networks.all3.networks :
+    for network in data.sase_networks.all3.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == perimeter81_network.n3.id
-  }[perimeter81_network.n3.id]
+    if network.id == sase_network.n3.id
+  }[sase_network.n3.id]
   tunnel_name = "IpSecSingle"
   p81_gateway_subnets = ["0.0.0.0/0"]
   remote_gateway_subnets = ["0.0.0.0/0"]
@@ -224,7 +224,7 @@ resource "perimeter81_ipsec_single" "ipss1" {
 
 func testAccIpsecSingleUpdateConfig() string {
 	config := `
-resource "perimeter81_network" "n3" {
+resource "sase_network" "n3" {
   network {
     name = "%s"
     tags = ["test"]
@@ -235,24 +235,24 @@ resource "perimeter81_network" "n3" {
   }
 }
 
-data "perimeter81_networks" "all3" {
+data "sase_networks" "all3" {
 	depends_on = [
-    	perimeter81_network.n3
+    	sase_network.n3
   	]
 }
 
-resource "perimeter81_ipsec_single" "ipss1" {
-  network_id = perimeter81_network.n3.id
+resource "sase_ipsec_single" "ipss1" {
+  network_id = sase_network.n3.id
   region_id = {
-    for network in data.perimeter81_networks.all3.networks :
+    for network in data.sase_networks.all3.networks :
     network.id => network.regions[0].id
-    if network.id == perimeter81_network.n3.id
-  }[perimeter81_network.n3.id]
+    if network.id == sase_network.n3.id
+  }[sase_network.n3.id]
   gateway_id = {
-    for network in data.perimeter81_networks.all3.networks :
+    for network in data.sase_networks.all3.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == perimeter81_network.n3.id
-  }[perimeter81_network.n3.id]
+    if network.id == sase_network.n3.id
+  }[sase_network.n3.id]
   tunnel_name = "IpSecSingle"
   p81_gateway_subnets = ["0.0.0.0/0"]
   remote_gateway_subnets = ["0.0.0.0/0"]

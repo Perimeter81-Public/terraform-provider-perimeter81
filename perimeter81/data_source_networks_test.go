@@ -18,7 +18,7 @@ func TestAccDataSourceNetworks_basic(t *testing.T) {
 			{
 				Config: testAccNetworksConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworksExists("data.perimeter81_networks.all"),
+					testAccCheckNetworksExists("data.sase_networks.all"),
 				),
 			},
 		},
@@ -37,6 +37,6 @@ func testAccCheckNetworksExists(n string) resource.TestCheckFunc {
 
 func testAccNetworksConfig() string {
 	return `
-	data "perimeter81_networks" "all" {}
+	data "sase_networks" "all" {}
   `
 }

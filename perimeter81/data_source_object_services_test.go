@@ -18,7 +18,7 @@ func TestAccDataSourceObjectServices_basic(t *testing.T) {
 			{
 				Config: testAccObjectServicessConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectServicessExists("data.perimeter81_object_services.all"),
+					testAccCheckObjectServicessExists("data.sase_object_services.all"),
 				),
 			},
 		},
@@ -37,6 +37,6 @@ func testAccCheckObjectServicessExists(n string) resource.TestCheckFunc {
 
 func testAccObjectServicessConfig() string {
 	return `
-	data "perimeter81_object_services" "all" {}
+	data "sase_object_services" "all" {}
   `
 }

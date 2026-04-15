@@ -18,7 +18,7 @@ func TestAccDataSourceRegions_basic(t *testing.T) {
 			{
 				Config: testAccRegionsDataSourceConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckRegionsExists("data.perimeter81_regions.all"),
+					testAccCheckRegionsExists("data.sase_regions.all"),
 				),
 			},
 		},
@@ -37,6 +37,6 @@ func testAccCheckRegionsExists(n string) resource.TestCheckFunc {
 
 func testAccRegionsDataSourceConfig() string {
 	return `
-	data "perimeter81_regions" "all" {}
+	data "sase_regions" "all" {}
   `
 }
