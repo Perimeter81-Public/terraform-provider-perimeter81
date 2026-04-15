@@ -48,7 +48,7 @@ func TestAccGateway_basic(t *testing.T) {
 func testAccCheckGatewaysCount(network *perimeter81Sdk.Network, want int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if len(network.Regions[0].Instances) != want {
-			return fmt.Errorf("got gateway count %q; want %q", len(network.Regions[0].Instances), want)
+			return fmt.Errorf("got gateway count %d; want %d", len(network.Regions[0].Instances), want)
 		}
 
 		return nil

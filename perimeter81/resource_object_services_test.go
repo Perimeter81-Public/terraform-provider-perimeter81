@@ -26,13 +26,8 @@ func TestAccObjectServices_basic(t *testing.T) {
 					testAccCheckObjectServicesAttributes(&objectServices, &testAccObjectServicesExpectedAttributes{
 						Name:        "test-os",
 						Description: "10.30.0.90/16",
-						Protocols: []perimeter81Sdk.ObjectServiceProtocolTcpudp{
-							{
-								Protocol:  "tcp",
-								ValueType: "single",
-								Value:     []int32{22},
-							},
-						},
+						ValueType:   "single",
+						Value:       []int32{22},
 					}),
 				),
 			},
@@ -43,13 +38,8 @@ func TestAccObjectServices_basic(t *testing.T) {
 					testAccCheckObjectServicesAttributes(&objectServices, &testAccObjectServicesExpectedAttributes{
 						Name:        "test-os-updated",
 						Description: "10.30.0.91/16",
-						Protocols: []perimeter81Sdk.ObjectServiceProtocolTcpudp{
-							{
-								Protocol:  "udp",
-								ValueType: "list",
-								Value:     []int32{23, 24},
-							},
-						},
+						ValueType:   "list",
+						Value:       []int32{23, 24},
 					}),
 				),
 			},
@@ -70,11 +60,16 @@ func testAccCheckObjectServicesExists(n string, objectServices *perimeter81Sdk.O
 		}
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
-		objectsServices, _, err := conn.ObjectsServicesApi.GetObjectsServices(ctx)
+		objectsServices, _, err := conn.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
 		if err != nil {
 			return fmt.Errorf("No ObjectServices found")
 		}
-		currentObjectServices := getCurrentObjectServicesInArray(&objectsServices, ObjectServicesID)
+		// Match by name since the list API does not return IDs
+		name := rs.Primary.Attributes["name"]
+		currentObjectServices := getCurrentObjectServicesInArray(objectsServices, name)
+		if currentObjectServices == nil {
+			return fmt.Errorf("ObjectServices with name %q not found", name)
+		}
 
 		*objectServices = *currentObjectServices
 		return nil
@@ -84,7 +79,8 @@ func testAccCheckObjectServicesExists(n string, objectServices *perimeter81Sdk.O
 type testAccObjectServicesExpectedAttributes struct {
 	Name        string
 	Description string
-	Protocols   []perimeter81Sdk.ObjectServiceProtocolTcpudp
+	ValueType   string
+	Value       []int32
 }
 
 func testAccCheckObjectServicesAttributes(objectServices *perimeter81Sdk.ObjectsServicesResponseObj, want *testAccObjectServicesExpectedAttributes) resource.TestCheckFunc {
@@ -93,19 +89,37 @@ func testAccCheckObjectServicesAttributes(objectServices *perimeter81Sdk.Objects
 			return fmt.Errorf("got name %q; want %q", objectServices.Name, want.Name)
 		}
 
-		if objectServices.Description != want.Description {
-			return fmt.Errorf("got tags %q; want %q", objectServices.Description, want.Description)
+		if objectServices.GetDescription() != want.Description {
+			return fmt.Errorf("got description %q; want %q", objectServices.GetDescription(), want.Description)
 		}
 
-		if objectServices.Protocols[0].Protocol != want.Protocols[0].Protocol {
-			return fmt.Errorf("got protocol %q; want %q", objectServices.Protocols[0].Protocol, want.Protocols[0].Protocol)
+		if len(objectServices.Protocols) == 0 {
+			return fmt.Errorf("got no protocols; want at least one")
 		}
 
-		if objectServices.Protocols[0].ValueType != want.Protocols[0].ValueType {
-			return fmt.Errorf("got value type %q; want %q", objectServices.Protocols[0].ValueType, want.Protocols[0].ValueType)
+		// Extract value_type and value from the first protocol's union type
+		proto := objectServices.Protocols[0]
+		var gotValueType string
+		var gotValue []int32
+		if proto.ObjectServiceProtocolTCPUDP != nil {
+			tcpudp := proto.ObjectServiceProtocolTCPUDP
+			if tcpudp.ObjectServiceProtocolList != nil {
+				gotValueType = tcpudp.ObjectServiceProtocolList.ValueType
+				gotValue = tcpudp.ObjectServiceProtocolList.Value
+			} else if tcpudp.ObjectServiceProtocolRange != nil {
+				gotValueType = tcpudp.ObjectServiceProtocolRange.ValueType
+				gotValue = tcpudp.ObjectServiceProtocolRange.Value
+			} else if tcpudp.ObjectServiceProtocolSingle != nil {
+				gotValueType = tcpudp.ObjectServiceProtocolSingle.ValueType
+				gotValue = tcpudp.ObjectServiceProtocolSingle.Value
+			}
 		}
-		if !testComparableArraiesEq(objectServices.Protocols[0].Value, want.Protocols[0].Value) {
-			return fmt.Errorf("got value %q; want %q", objectServices.Protocols[0].Value, want.Protocols[0].Value)
+
+		if gotValueType != want.ValueType {
+			return fmt.Errorf("got value_type %q; want %q", gotValueType, want.ValueType)
+		}
+		if !testComparableArraiesEq(gotValue, want.Value) {
+			return fmt.Errorf("got value %v; want %v", gotValue, want.Value)
 		}
 
 		return nil

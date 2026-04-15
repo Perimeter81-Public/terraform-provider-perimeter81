@@ -100,27 +100,21 @@ func resourceObjectServicesCreate(ctx context.Context, d *schema.ResourceData, m
 	// get the object services data from the terraform resource data and flatten what need to be flattened for the api
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	protocols := flattenProtocolsData(d.Get("protocols").([]interface{}))
-	protocolsPayload := make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, len(protocols))
-
-	for index, protocol := range protocols {
-		protocolsPayload[index].ObjectServiceProtocolTcpudp = protocol
-	}
+	protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
 
 	CreateObjectsServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
 		Name:        name,
-		Description: description,
+		Description: &description,
 		Protocols:   protocolsPayload,
 	}
-	// return diags
 	// create the Object Services and check for errors
-	newObjectServices, _, err := client.ObjectsServicesApi.PostObjectsServices(ctx, CreateObjectsServicesPayload)
+	newObjectServices, _, err := client.ObjectsServicesAPI.PostObjectsServices(ctx).ObjectsServicesRequestObj(CreateObjectsServicesPayload).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create Object Services", err)
 	}
 
-	d.SetId(newObjectServices.Id)
+	d.SetId(newObjectServices.GetId())
 	return resourceObjectServicesRead(ctx, d, m)
 }
 
@@ -139,12 +133,12 @@ func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m i
 	ctx = context.Background()
 
 	// get the object services and check for errors
-	objectsServices, _, err := client.ObjectsServicesApi.GetObjectsServices(ctx)
+	objectsServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to find Network", err)
 	}
-	currentObjectServices := getCurrentObjectServicesInArray(&objectsServices, d.Id())
+	currentObjectServices := getCurrentObjectServicesInArray(objectsServices, d.Get("name").(string))
 
 	if err := d.Set("name", currentObjectServices.Name); err != nil {
 		d.Partial(true)
@@ -182,21 +176,16 @@ func resourceObjectServicesUpdate(ctx context.Context, d *schema.ResourceData, m
 		objectServicesId := d.Id()
 		name := d.Get("name").(string)
 		description := d.Get("description").(string)
-		protocols := flattenProtocolsData(d.Get("protocols").([]interface{}))
 
 		// prepare the object services data for the api service
-		protocolsPayload := make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, len(protocols))
-		for index, protocol := range protocols {
-			protocolsPayload[index].ObjectServiceProtocolTcpudp = protocol
-		}
+		protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
 		updateObjectServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
-			Id:          objectServicesId,
 			Name:        name,
-			Description: description,
+			Description: &description,
 			Protocols:   protocolsPayload,
 		}
 		//update the object services and check for errors
-		_, _, err := client.ObjectsServicesApi.PutObjectsServices(ctx, updateObjectServicesPayload, objectServicesId)
+		_, _, err := client.ObjectsServicesAPI.PutObjectsServices(ctx, objectServicesId).ObjectsServicesRequestObj(updateObjectServicesPayload).Execute()
 		if err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update object services", err)
@@ -221,7 +210,7 @@ func resourceObjectServicesDelete(ctx context.Context, d *schema.ResourceData, m
 	ctx = context.Background()
 
 	// delete the object services and check for errors
-	_, err := client.ObjectsServicesApi.DeleteObjectsServices(ctx, d.Id())
+	_, err := client.ObjectsServicesAPI.DeleteObjectsServices(ctx, d.Id()).Execute()
 
 	if err != nil {
 		d.Partial(true)

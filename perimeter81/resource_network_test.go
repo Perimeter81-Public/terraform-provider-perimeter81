@@ -59,11 +59,11 @@ func testAccCheckNetworkExists(n string, network *perimeter81Sdk.Network) resour
 		}
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
-		gotNetwork, _, err := conn.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkID)
+		gotNetwork, _, err := conn.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkID).Execute()
 		if err != nil {
 			return err
 		}
-		*network = gotNetwork
+		*network = *gotNetwork
 		return nil
 	}
 }

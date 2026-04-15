@@ -59,11 +59,11 @@ func testAccCheckWireguardExists(n string, tunnel *perimeter81Sdk.WireguardTunne
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
 		networkId := rs.Primary.Attributes["network_id"]
-		gotWireguard, _, err := conn.WireguardApi.GetWireguardTunnel(ctx, networkId, tunnelId)
+		gotWireguard, _, err := conn.WireguardAPI.StandardGetWireguardTunnel(ctx, networkId, tunnelId).Execute()
 		if err != nil {
 			return err
 		}
-		*tunnel = gotWireguard
+		*tunnel = *gotWireguard
 		return nil
 	}
 }

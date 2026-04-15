@@ -248,7 +248,7 @@ func dataSourceNetworksRead(ctx context.Context, d *schema.ResourceData, m inter
 	ctx = context.Background()
 
 	// call the api and check if there is an error
-	networks, _, err := client.NetworksApi.GetNetworks(ctx)
+	networks, _, err := client.StandardNetworksAPI.StandardGetNetworks(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to get Networks", err)

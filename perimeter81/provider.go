@@ -27,24 +27,26 @@ func Provider() *schema.Provider {
 			},
 			"base_url": {
 				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("BASE_URL", nil),
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("BASE_URL", perimeter81Sdk.BaseURLUS),
 				Description: descriptions["base_url"],
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"perimeter81_network":         resourceNetwork(),
-			"perimeter81_wireguard":       resourceWireguard(),
-			"perimeter81_openvpn":         resourceOpenvpn(),
-			"perimeter81_ipsec_single":    resourceIpsecSingle(),
-			"perimeter81_ipsec_redundant": resourceIpsecRedundant(),
-			"perimeter81_gateway":         resourceGateway(),
-			"perimeter81_object_services": resourceObjectServices(),
+			"perimeter81_network":           resourceNetwork(),
+			"perimeter81_wireguard":         resourceWireguard(),
+			"perimeter81_openvpn":           resourceOpenvpn(),
+			"perimeter81_ipsec_single":      resourceIpsecSingle(),
+			"perimeter81_ipsec_redundant":   resourceIpsecRedundant(),
+			"perimeter81_gateway":           resourceGateway(),
+			"perimeter81_object_services":   resourceObjectServices(),
+			"perimeter81_object_addresses":  resourceObjectAddresses(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"perimeter81_networks": dataSourceNetworks(),
-			"perimeter81_regions":  dataSourceRegions(),
-			"perimeter81_object_services":  dataSourceObjectServices(),
+			"perimeter81_networks":          dataSourceNetworks(),
+			"perimeter81_regions":           dataSourceRegions(),
+			"perimeter81_object_services":   dataSourceObjectServices(),
+			"perimeter81_object_addresses":  dataSourceObjectAddresses(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -84,6 +86,6 @@ var descriptions map[string]string
 func init() {
 	descriptions = map[string]string{
 		"api_key":  "The Api key for the Preimeter81 Public API.",
-		"base_url": "The base url for the rest api.",
+		"base_url": "The base url for the rest api. Defaults to the US endpoint if not set.",
 	}
 }

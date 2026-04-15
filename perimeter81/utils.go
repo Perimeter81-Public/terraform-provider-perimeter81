@@ -65,13 +65,13 @@ func flattenRegions(regionsDate []perimeter81Sdk.Region) []interface{} {
 		for i, regionData := range regionsDate {
 			region := make(map[string]interface{})
 
-			region["country_code"] = regionData.CountryCode
-			region["continent_code"] = regionData.ContinentCode
-			region["display_name"] = regionData.DisplayName
-			region["name"] = regionData.Name
-			region["class_name"] = regionData.ClassName
-			region["object_id"] = regionData.ObjectId
-			region["id"] = regionData.Id
+			region["country_code"] = regionData.GetCountryCode()
+			region["continent_code"] = regionData.GetContinentCode()
+			region["display_name"] = regionData.GetDisplayName()
+			region["name"] = regionData.GetName()
+			region["class_name"] = regionData.GetClassName()
+			region["object_id"] = regionData.GetId()
+			region["id"] = regionData.GetId()
 			regions[i] = region
 		}
 
@@ -85,14 +85,14 @@ func flattenRegions(regionsDate []perimeter81Sdk.Region) []interface{} {
 flattenRegionsData flatten regions data
   - @param regionItems []interface{} - the regions that need to be flattened
 
-@return []perimeter81Sdk.CreateRegionInNetworkload - the flattened regions
+@return []perimeter81Sdk.StandardNetworkRegionConfig - the flattened regions
 */
-func flattenRegionsData(regionItems []interface{}) []perimeter81Sdk.CreateRegionInNetworkload {
+func flattenRegionsData(regionItems []interface{}) []StandardNetworkRegionConfig {
 	if regionItems != nil {
-		regions := make([]perimeter81Sdk.CreateRegionInNetworkload, len(regionItems))
+		regions := make([]StandardNetworkRegionConfig, len(regionItems))
 
 		for i, regionItem := range regionItems {
-			region := perimeter81Sdk.CreateRegionInNetworkload{}
+			region := StandardNetworkRegionConfig{}
 
 			region.CpRegionId = regionItem.(map[string]interface{})["cpregion_id"].(string)
 			region.Idle = regionItem.(map[string]interface{})["idle"].(bool)
@@ -106,46 +106,77 @@ func flattenRegionsData(regionItems []interface{}) []perimeter81Sdk.CreateRegion
 		return regions
 	}
 
-	return make([]perimeter81Sdk.CreateRegionInNetworkload, 0)
+	return make([]StandardNetworkRegionConfig, 0)
 }
 
 /*
 flattenProtocolsData flatten Protocols data
   - @param protocolItems []interface{} - the protocols that need to be flattened
 
-@return []perimeter81Sdk.ObjectServiceProtocolTcpudp - the flattened protocols
+@return []perimeter81Sdk.ObjectsServicesProtocolRequestObj - the flattened protocols
 */
-func flattenProtocolsData(protocolItems []interface{}) []perimeter81Sdk.ObjectServiceProtocolTcpudp {
+func flattenProtocolsData(protocolItems []interface{}) []perimeter81Sdk.ObjectsServicesProtocolRequestObj {
 	if protocolItems != nil {
-		protocols := make([]perimeter81Sdk.ObjectServiceProtocolTcpudp, len(protocolItems))
+		protocols := make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, len(protocolItems))
 
 		for i, protocolItem := range protocolItems {
-			protocol := perimeter81Sdk.ObjectServiceProtocolTcpudp{}
-
-			protocol.Protocol = protocolItem.(map[string]interface{})["protocol"].(string)
-			protocol.ValueType = protocolItem.(map[string]interface{})["value_type"].(string)
-			protocol.Value = flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
-			protocols[i] = protocol
+			valueType := protocolItem.(map[string]interface{})["value_type"].(string)
+			value := flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
+			// Wrap as ObjectServiceProtocolList inside TCPUDP union
+			listProto := perimeter81Sdk.ObjectServiceProtocolList{
+				ValueType: valueType,
+				Value:     value,
+			}
+			tcpudp := perimeter81Sdk.ObjectServiceProtocolListAsObjectServiceProtocolTCPUDP(&listProto)
+			protocols[i] = perimeter81Sdk.ObjectsServicesProtocolRequestObj{
+				ObjectServiceProtocolTCPUDP: &tcpudp,
+			}
 		}
 
 		return protocols
 	}
 
-	return make([]perimeter81Sdk.ObjectServiceProtocolTcpudp, 0)
+	return make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, 0)
+}
+
+// StandardNetworkRegionConfig holds the internal representation of a standard network region
+// used for tracking region create/delete operations.
+type StandardNetworkRegionConfig struct {
+	// CpRegionId is the region ID used in the get-regions endpoint (cpregion / harmony-sase region id).
+	CpRegionId string
+	// RegionID is the ID of the created region inside the network.
+	RegionID string
+	// Idle indicates whether the gateway should be created as disabled.
+	Idle bool
+	// Name is the display name of the region.
+	Name string
+	// Dns is the DNS of the region.
+	Dns string
+	// DefaultGatewayIp is the IP of the default gateway.
+	DefaultGatewayIp string
+}
+
+// GatewayConfig holds the internal representation of a gateway.
+type GatewayConfig struct {
+	Name string
+	Idle bool
+	Id   string
+	Dns  string
+	Ip   string
 }
 
 /*
 flattenGatewaysData flatten gateways data
   - @param gatewaysItems []interface{} - the gateways data that need to be flattened
 
-@return []perimeter81Sdk.Gateway - the flattened gateways
+@return []GatewayConfig - the flattened gateways
 */
-func flattenGatewaysData(gatewaysItems []interface{}) []perimeter81Sdk.Gateway {
+func flattenGatewaysData(gatewaysItems []interface{}) []GatewayConfig {
 	if gatewaysItems != nil {
-		gateways := make([]perimeter81Sdk.Gateway, len(gatewaysItems))
+		gateways := make([]GatewayConfig, len(gatewaysItems))
 
 		for i, gatewayItem := range gatewaysItems {
-			gateway := perimeter81Sdk.Gateway{}
+			gateway := GatewayConfig{}
 
 			gateway.Name = gatewayItem.(map[string]interface{})["name"].(string)
 			gateway.Idle = gatewayItem.(map[string]interface{})["idle"].(bool)
@@ -159,16 +190,16 @@ func flattenGatewaysData(gatewaysItems []interface{}) []perimeter81Sdk.Gateway {
 		return gateways
 	}
 
-	return make([]perimeter81Sdk.Gateway, 0)
+	return make([]GatewayConfig, 0)
 }
 
 /*
-flattenGatewaysData flatten gateways data
-  - @param gatewaysItems []perimeter81Sdk.Gateway - the gateways that need to be flattened
+flattenGateways flatten gateways data
+  - @param gatewaysItems []GatewayConfig - the gateways that need to be flattened
 
 @return []interface{} - the flattened gateways data
 */
-func flattenGateways(gatewaysItems []perimeter81Sdk.Gateway) []interface{} {
+func flattenGateways(gatewaysItems []GatewayConfig) []interface{} {
 	if gatewaysItems != nil {
 		gateways := make([]interface{}, len(gatewaysItems))
 
@@ -202,8 +233,7 @@ func flattenNetworkData(networkItems []perimeter81Sdk.CreateNetworkPayload) []in
 
 			network["name"] = networkItem.Name
 			network["tags"] = networkItem.Tags
-			network["subnet"] = networkItem.Subnet
-			network["dns"] = networkItem.Dns
+			network["subnet"] = networkItem.GetSubnet()
 			networks[i] = network
 		}
 
@@ -215,11 +245,11 @@ func flattenNetworkData(networkItems []perimeter81Sdk.CreateNetworkPayload) []in
 
 /*
 flattenNetworkRegions flatten network regions
-  - @param regionItems []perimeter81Sdk.CreateRegionInNetworkload - the network regions that need to be flattened
+  - @param regionItems []StandardNetworkRegionConfig - the network regions that need to be flattened
 
 @return []interface{} - the flattened  network regions
 */
-func flattenNetworkRegions(regionItems []perimeter81Sdk.CreateRegionInNetworkload) []interface{} {
+func flattenNetworkRegions(regionItems []StandardNetworkRegionConfig) []interface{} {
 	if regionItems != nil {
 		regions := make([]interface{}, len(regionItems))
 
@@ -253,10 +283,28 @@ func flattenObjectServicesProtocols(protocolItems []perimeter81Sdk.ObjectsServic
 
 		for i, protocolItem := range protocolItems {
 			protocol := make(map[string]interface{})
-
-			protocol["protocol"] = protocolItem.Protocol
-			protocol["value_type"] = protocolItem.ValueType
-			protocol["value"] = protocolItem.Value
+			// Extract data from union type variants
+			if protocolItem.ObjectServiceProtocolTCPUDP != nil {
+				tcpudp := protocolItem.ObjectServiceProtocolTCPUDP
+				protocol["protocol"] = ""
+				if tcpudp.ObjectServiceProtocolList != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolList.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolList.Value
+				} else if tcpudp.ObjectServiceProtocolRange != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolRange.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolRange.Value
+				} else if tcpudp.ObjectServiceProtocolSingle != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolSingle.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolSingle.Value
+				} else {
+					protocol["value_type"] = ""
+					protocol["value"] = []int32{}
+				}
+			} else {
+				protocol["protocol"] = ""
+				protocol["value_type"] = ""
+				protocol["value"] = []int32{}
+			}
 			protocols[i] = protocol
 		}
 
@@ -281,7 +329,7 @@ func flattenRegionData(networkItems []perimeter81Sdk.CreateNetworkPayload) []int
 
 			network["name"] = networkItem.Name
 			network["tags"] = networkItem.Tags
-			network["subnet"] = networkItem.Subnet
+			network["subnet"] = networkItem.GetSubnet()
 			networks[i] = network
 		}
 
@@ -310,8 +358,12 @@ func flattenNetworksData(networkItems []perimeter81Sdk.Network) []interface{} {
 			network["accesstype"] = serverItem.AccessType
 			network["isdefault"] = serverItem.IsDefault
 			network["tenantid"] = serverItem.TenantId
-			network["createdat"] = serverItem.CreatedAt
-			network["updatedat"] = serverItem.UpdatedAt
+			network["createdat"] = serverItem.CreatedAt.String()
+			if serverItem.UpdatedAt != nil {
+				network["updatedat"] = serverItem.UpdatedAt.String()
+			} else {
+				network["updatedat"] = ""
+			}
 			network["regions"] = flattenNetworkRegionsData(serverItem.Regions)
 			networks[i] = network
 		}
@@ -335,8 +387,12 @@ func flattenNetworkRegionsData(regionItems []perimeter81Sdk.NetworkRegion) []int
 			region["dns"] = regionItem.Dns
 			region["name"] = regionItem.Name
 			region["tenantid"] = regionItem.TenantId
-			region["createdat"] = regionItem.CreatedAt
-			region["updatedat"] = regionItem.UpdatedAt
+			region["createdat"] = regionItem.CreatedAt.String()
+			if regionItem.UpdatedAt != nil {
+				region["updatedat"] = regionItem.UpdatedAt.String()
+			} else {
+				region["updatedat"] = ""
+			}
 			region["id"] = regionItem.Id
 			region["instances"] = flattenNetworkInstancesData(regionItem.Instances)
 			regions[i] = region
@@ -360,8 +416,12 @@ func flattenNetworkInstancesData(instanceItems []perimeter81Sdk.NetworkInstance)
 			instance["network"] = instanceItem.Network
 			instance["dns"] = instanceItem.Dns
 			instance["tenantid"] = instanceItem.TenantId
-			instance["createdat"] = instanceItem.CreatedAt
-			instance["updatedat"] = instanceItem.UpdatedAt
+			instance["createdat"] = instanceItem.CreatedAt.String()
+			if instanceItem.UpdatedAt != nil {
+				instance["updatedat"] = instanceItem.UpdatedAt.String()
+			} else {
+				instance["updatedat"] = ""
+			}
 			instance["ip"] = instanceItem.Ip
 			instance["id"] = instanceItem.Id
 			instance["imageversion"] = instanceItem.ImageVersion
@@ -388,18 +448,80 @@ func flattenNetworkTunnelsData(tunnelItems []perimeter81Sdk.NetworkTunnel) []int
 		tunnels := make([]interface{}, len(tunnelItems))
 		for i, tunnelItem := range tunnelItems {
 			tunnel := make(map[string]interface{})
-			tunnel["instance"] = tunnelItem.Instance
-			tunnel["interfacename"] = tunnelItem.InterfaceName
-			tunnel["leftallowedip"] = tunnelItem.LeftAllowedIP
-			tunnel["leftendpoint"] = tunnelItem.LeftEndpoint
-			tunnel["network"] = tunnelItem.Network
-			tunnel["region"] = tunnelItem.Region
-			tunnel["requestconfigtoken"] = tunnelItem.RequestConfigToken
-			tunnel["type"] = tunnelItem.Type_
-			tunnel["id"] = tunnelItem.Id
-			tunnel["tenantid"] = tunnelItem.TenantId
-			tunnel["createdat"] = tunnelItem.CreatedAt
-			tunnel["updatedat"] = tunnelItem.UpdatedAt
+			// NetworkTunnel is a union type - extract base fields from whichever variant is set
+			if tunnelItem.NetworkTunnelWireguard != nil {
+				wg := tunnelItem.NetworkTunnelWireguard
+				tunnel["instance"] = wg.Instance
+				tunnel["interfacename"] = wg.InterfaceName
+				tunnel["leftallowedip"] = wg.LeftAllowedIP
+				tunnel["leftendpoint"] = wg.LeftEndpoint
+				tunnel["network"] = wg.Network
+				tunnel["region"] = wg.Region
+				tunnel["requestconfigtoken"] = wg.RequestConfigToken
+				tunnel["type"] = wg.Type
+				tunnel["id"] = wg.Id
+				tunnel["tenantid"] = wg.TenantId
+				tunnel["createdat"] = wg.CreatedAt.String()
+				if wg.UpdatedAt != nil {
+					tunnel["updatedat"] = wg.UpdatedAt.String()
+				} else {
+					tunnel["updatedat"] = ""
+				}
+			} else if tunnelItem.NetworkTunnelIpsecSingle != nil {
+				t := tunnelItem.NetworkTunnelIpsecSingle
+				tunnel["instance"] = t.Instance
+				tunnel["interfacename"] = t.InterfaceName
+				tunnel["leftallowedip"] = []string{}
+				tunnel["leftendpoint"] = ""
+				tunnel["network"] = t.Network
+				tunnel["region"] = t.Region
+				tunnel["requestconfigtoken"] = ""
+				tunnel["type"] = t.Type
+				tunnel["id"] = t.Id
+				tunnel["tenantid"] = t.TenantId
+				tunnel["createdat"] = t.CreatedAt.String()
+				if t.UpdatedAt != nil {
+					tunnel["updatedat"] = t.UpdatedAt.String()
+				} else {
+					tunnel["updatedat"] = ""
+				}
+			} else if tunnelItem.NetworkTunnelIpsecRedundant != nil {
+				t := tunnelItem.NetworkTunnelIpsecRedundant
+				tunnel["instance"] = t.Instance
+				tunnel["interfacename"] = t.InterfaceName
+				tunnel["leftallowedip"] = []string{}
+				tunnel["leftendpoint"] = ""
+				tunnel["network"] = t.Network
+				tunnel["region"] = t.Region
+				tunnel["requestconfigtoken"] = ""
+				tunnel["type"] = t.Type
+				tunnel["id"] = t.Id
+				tunnel["tenantid"] = t.TenantId
+				tunnel["createdat"] = t.CreatedAt.String()
+				if t.UpdatedAt != nil {
+					tunnel["updatedat"] = t.UpdatedAt.String()
+				} else {
+					tunnel["updatedat"] = ""
+				}
+			} else if tunnelItem.NetworkTunnelOpenvpn != nil {
+				t := tunnelItem.NetworkTunnelOpenvpn
+				tunnel["instance"] = t.Instance
+				tunnel["interfacename"] = t.InterfaceName
+				tunnel["leftallowedip"] = []string{}
+				tunnel["leftendpoint"] = ""
+				tunnel["network"] = t.Network
+				tunnel["region"] = t.Region
+				tunnel["requestconfigtoken"] = ""
+				tunnel["type"] = t.Type
+				tunnel["id"] = t.Id
+				tunnel["tenantid"] = t.TenantId
+				tunnel["createdat"] = t.CreatedAt.String()
+				if t.UpdatedAt != nil {
+					tunnel["updatedat"] = t.UpdatedAt.String()
+				} else {
+					tunnel["updatedat"] = ""
+				}
+			}
 			tunnels[i] = tunnel
 		}
 		return tunnels
@@ -410,11 +532,11 @@ func flattenNetworkTunnelsData(tunnelItems []perimeter81Sdk.NetworkTunnel) []int
 
 /*
 flattenPhasesData flatten Phases date
-  - @param phasesItems *perimeter81Sdk.NetworkTunnel - the network tunnels that need to be flattened
+  - @param phasesItem *perimeter81Sdk.IPSecPhaseConfig - the phase config that need to be flattened
 
 @return []interface{} - the flattened  phases data
 */
-func flattenPhasesData(phasesItem *perimeter81Sdk.IpSecPhase) []interface{} {
+func flattenPhasesData(phasesItem *perimeter81Sdk.IPSecPhaseConfig) []interface{} {
 	if phasesItem != nil {
 		phase := make([]interface{}, 1)
 		phaseData := make(map[string]interface{})
@@ -430,11 +552,11 @@ func flattenPhasesData(phasesItem *perimeter81Sdk.IpSecPhase) []interface{} {
 
 /*
 flattenAdvancedSettingsData flatten Advanced Settings date
-  - @param advancedSettingsItem *IpSecAdvancedSettings - the advanced settings that need to be flattened
+  - @param advancedSettingsItem *IPSecAdvancedSettings - the advanced settings that need to be flattened
 
 @return []interface{} - the flattened advanced settings data
 */
-func flattenAdvancedSettingsData(advancedSettingsItem *perimeter81Sdk.IpSecAdvancedSettings) []interface{} {
+func flattenAdvancedSettingsData(advancedSettingsItem *perimeter81Sdk.IPSecAdvancedSettings) []interface{} {
 	if advancedSettingsItem != nil {
 		advancedSettings := make([]interface{}, 1)
 		advancedSettingsData := make(map[string]interface{})
@@ -443,8 +565,10 @@ func flattenAdvancedSettingsData(advancedSettingsItem *perimeter81Sdk.IpSecAdvan
 		advancedSettingsData["lifetime"] = advancedSettingsItem.Lifetime
 		advancedSettingsData["dpd_delay"] = advancedSettingsItem.DpdDelay
 		advancedSettingsData["dpd_timeout"] = advancedSettingsItem.DpdTimeout
-		advancedSettingsData["phase1"] = flattenPhasesData(advancedSettingsItem.Phase1)
-		advancedSettingsData["phase2"] = flattenPhasesData(advancedSettingsItem.Phase2)
+		phase1 := advancedSettingsItem.Phase1
+		phase2 := advancedSettingsItem.Phase2
+		advancedSettingsData["phase1"] = flattenPhasesData(&phase1)
+		advancedSettingsData["phase2"] = flattenPhasesData(&phase2)
 		advancedSettings[0] = advancedSettingsData
 		return advancedSettings
 	}
@@ -454,11 +578,11 @@ func flattenAdvancedSettingsData(advancedSettingsItem *perimeter81Sdk.IpSecAdvan
 
 /*
 flattenSharedSettingsData flatten Shared Settings date
-  - @param advancedSettingsItem *IpSecSharedSettings - the Ip-Sec Shared settings that need to be flattened
+  - @param sharedSettingsItem *IpSecSharedSettings - the Ip-Sec Shared settings that need to be flattened
 
 @return []interface{} - the flattened Ip-Sec Shared settings data
 */
-func flattenSharedSettingsData(sharedSettingsItem *perimeter81Sdk.IpSecSharedSettings) []interface{} {
+func flattenSharedSettingsData(sharedSettingsItem *perimeter81Sdk.IPSecSharedSettings) []interface{} {
 	if sharedSettingsItem != nil {
 		sharedSettings := make([]interface{}, 1)
 		sharedSettingsData := make(map[string]interface{})
@@ -473,22 +597,32 @@ func flattenSharedSettingsData(sharedSettingsItem *perimeter81Sdk.IpSecSharedSet
 
 /*
 flattenTunnelData flatten Tunnel date
-  - @param tunnelItem *IpSecRedundantTunnel - the tunnel that need to be flattened
+  - @param tunnelItem *IPSecRedundantTunnel - the tunnel that need to be flattened
 
 @return []interface{} - the flattened tunnel data
 */
-func flattenTunnelData(tunnelItem *perimeter81Sdk.IpSecRedundantTunnel) []interface{} {
+func flattenTunnelData(tunnelItem *perimeter81Sdk.IPSecRedundantTunnel) []interface{} {
 	if tunnelItem != nil {
 		tunnel := make([]interface{}, 1)
 		tunnelData := make(map[string]interface{})
 		tunnelData["passphrase"] = tunnelItem.Passphrase
 		tunnelData["gateway_id"] = tunnelItem.GatewayID
-		tunnelData["remote_id"] = tunnelItem.RemoteID
-		tunnelData["p81_gwinternal_ip"] = tunnelItem.P81GWinternalIP
-		tunnelData["remote_gwinternal_ip"] = tunnelItem.RemoteGWinernalIP
+		// RemoteID is a union type wrapping *string
+		if tunnelItem.RemoteID.String != nil {
+			tunnelData["remote_id"] = *tunnelItem.RemoteID.String
+		} else {
+			tunnelData["remote_id"] = ""
+		}
+		tunnelData["p81_gwinternal_ip"] = tunnelItem.P81GWInternalIP
+		tunnelData["remote_gwinternal_ip"] = tunnelItem.RemoteGWInternalIP
 		tunnelData["remote_public_ip"] = tunnelItem.RemotePublicIP
-		tunnelData["remote_asn"] = tunnelItem.RemoteASN
-		tunnelData["tunnel_id"] = tunnelItem.TunnelID
+		// RemoteASN is a tag struct — store empty string as placeholder
+		tunnelData["remote_asn"] = ""
+		if tunnelItem.TunnelID != nil {
+			tunnelData["tunnel_id"] = *tunnelItem.TunnelID
+		} else {
+			tunnelData["tunnel_id"] = ""
+		}
 		tunnel[0] = tunnelData
 		return tunnel
 	}
@@ -507,7 +641,7 @@ getTunnelId get the tunnel id
 @return string - the tunnel id, diag.Diagnostics - the diagnostics
 */
 func getTunnelId(ctx context.Context, networkId string, tunnelBody perimeter81Sdk.BaseTunnelValues, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (string, diag.Diagnostics) {
-	network, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
+	network, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkId).Execute()
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to fetch network", err)
 		return "", diags
@@ -518,8 +652,9 @@ func getTunnelId(ctx context.Context, networkId string, tunnelBody perimeter81Sd
 			for _, gateway := range region.Instances {
 				if gateway.Id == tunnelBody.GatewayID {
 					for _, tunnel := range gateway.Tunnels {
-						if tunnel.InterfaceName == tunnelBody.TunnelName {
-							return tunnel.Id, diags
+						ifName := getNetworkTunnelInterfaceName(tunnel)
+						if ifName == tunnelBody.TunnelName {
+							return getNetworkTunnelId(tunnel), diags
 						}
 					}
 				}
@@ -529,6 +664,54 @@ func getTunnelId(ctx context.Context, networkId string, tunnelBody perimeter81Sd
 	}
 	diags = appendErrorDiags(diags, "Unable to find tunnel", fmt.Errorf("check tunnel fields there might be overlap error"))
 	return "", diags
+}
+
+/*
+getNetworkTunnelInterfaceName extract the interface name from a NetworkTunnel union type.
+*/
+func getNetworkTunnelInterfaceName(tunnel perimeter81Sdk.NetworkTunnel) string {
+	if tunnel.NetworkTunnelWireguard != nil {
+		return tunnel.NetworkTunnelWireguard.InterfaceName
+	}
+	if tunnel.NetworkTunnelIpsecSingle != nil {
+		return tunnel.NetworkTunnelIpsecSingle.InterfaceName
+	}
+	if tunnel.NetworkTunnelIpsecRedundant != nil {
+		return tunnel.NetworkTunnelIpsecRedundant.InterfaceName
+	}
+	if tunnel.NetworkTunnelOpenvpn != nil {
+		return tunnel.NetworkTunnelOpenvpn.InterfaceName
+	}
+	return ""
+}
+
+/*
+getNetworkTunnelId extract the id from a NetworkTunnel union type.
+*/
+func getNetworkTunnelId(tunnel perimeter81Sdk.NetworkTunnel) string {
+	if tunnel.NetworkTunnelWireguard != nil {
+		return tunnel.NetworkTunnelWireguard.Id
+	}
+	if tunnel.NetworkTunnelIpsecSingle != nil {
+		return tunnel.NetworkTunnelIpsecSingle.Id
+	}
+	if tunnel.NetworkTunnelIpsecRedundant != nil {
+		return tunnel.NetworkTunnelIpsecRedundant.Id
+	}
+	if tunnel.NetworkTunnelOpenvpn != nil {
+		return tunnel.NetworkTunnelOpenvpn.Id
+	}
+	return ""
+}
+
+/*
+getNetworkTunnelHaTunnelId extract the HaTunnelID from a NetworkTunnel union type (for redundant tunnels).
+*/
+func getNetworkTunnelHaTunnelId(tunnel perimeter81Sdk.NetworkTunnel) string {
+	if tunnel.NetworkTunnelIpsecRedundant != nil {
+		return tunnel.NetworkTunnelIpsecRedundant.HaTunnelID.Id
+	}
+	return ""
 }
 
 /*
@@ -542,7 +725,7 @@ getGatewayInfo get the gateway info
 @return string - the gateway id, the gateway dns, the gateway ip,  diag.Diagnostics - the diagnostics
 */
 func getGatewayInfo(ctx context.Context, networkId string, regionId string, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (string, string, string, diag.Diagnostics) {
-	network, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
+	network, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkId).Execute()
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to fetch network", err)
 		return "", "", "", diags
@@ -553,9 +736,9 @@ func getGatewayInfo(ctx context.Context, networkId string, regionId string, clie
 	var gatewayIp string
 	for _, region := range network.Regions {
 		if region.Id == regionId {
-			latest, _ := time.Parse("2006-01-02T15:04:05.000Z", region.Instances[0].CreatedAt)
+			latest := region.Instances[0].CreatedAt
 			for _, gateway := range region.Instances {
-				currentTime, _ := time.Parse("2006-01-02T15:04:05.000Z", gateway.CreatedAt)
+				currentTime := gateway.CreatedAt
 				gatewayId = gateway.Id
 				if currentTime.After(latest) {
 					latest = currentTime
@@ -580,7 +763,7 @@ getRedundantTunnelId get the redundant tunnel id
 @return string - the redundant tunnel id, diag.Diagnostics - the diagnostics
 */
 func getRedundantTunnelId(ctx context.Context, networkId string, tunnelBody perimeter81Sdk.BaseTunnelValues, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (string, diag.Diagnostics) {
-	network, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
+	network, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkId).Execute()
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to fetch network", err)
 		return "", diags
@@ -591,8 +774,9 @@ func getRedundantTunnelId(ctx context.Context, networkId string, tunnelBody peri
 			for _, gateway := range region.Instances {
 				if gateway.Id == tunnelBody.GatewayID {
 					for _, tunnel := range gateway.Tunnels {
-						if tunnel.InterfaceName == tunnelBody.TunnelName+"01" || tunnel.InterfaceName == tunnelBody.TunnelName+"02" {
-							return tunnel.HaTunnelID.Id, diags
+						ifName := getNetworkTunnelInterfaceName(tunnel)
+						if ifName == tunnelBody.TunnelName+"01" || ifName == tunnelBody.TunnelName+"02" {
+							return getNetworkTunnelHaTunnelId(tunnel), diags
 						}
 					}
 				}
@@ -605,19 +789,19 @@ func getRedundantTunnelId(ctx context.Context, networkId string, tunnelBody peri
 }
 
 /*
-	setNetworkRegionInfos set the network region infos
-	 - @param regionsData perimeter81Sdk.RegionsList - the regions data
-	 - @param networkData perimeter81Sdk.Network - the network data
-	 - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions
+setNetworkRegionInfos set the network region infos
+  - @param regionsData []perimeter81Sdk.Region - the regions data
+  - @param networkData *perimeter81Sdk.Network - the network data
+  - @param regions []StandardNetworkRegionConfig - the regions
 
 @return void
 */
-func setNetworkRegionInfos(regionsData perimeter81Sdk.RegionsList, networkData perimeter81Sdk.Network, regions []perimeter81Sdk.CreateRegionInNetworkload) {
-	newRegionsData := make([]perimeter81Sdk.CreateRegionInNetworkload, 0)
+func setNetworkRegionInfos(regionsData []perimeter81Sdk.Region, networkData *perimeter81Sdk.Network, regions []StandardNetworkRegionConfig) {
+	newRegionsData := make([]StandardNetworkRegionConfig, 0)
 	for _, networkRegions := range networkData.Regions {
-		for _, regionData := range regionsData.Regions {
-			if networkRegions.Name == regionData.DisplayName {
-				newRegionsData = append(newRegionsData, perimeter81Sdk.CreateRegionInNetworkload{RegionID: networkRegions.Id, CpRegionId: regionData.Id, Dns: networkRegions.Dns, Name: networkRegions.Name})
+		for _, regionData := range regionsData {
+			if networkRegions.Name == regionData.GetDisplayName() {
+				newRegionsData = append(newRegionsData, StandardNetworkRegionConfig{RegionID: networkRegions.Id, CpRegionId: regionData.GetId(), Dns: networkRegions.Dns, Name: networkRegions.Name})
 			}
 		}
 	}
@@ -642,41 +826,44 @@ checkNetworkStatus check the network status
 @return perimeter81Sdk.AsyncOperationStatus, diag.Diagnostics, error - the network status, the diagnostics, the error
 */
 func checkNetworkStatus(ctx context.Context, statusId string, client perimeter81Sdk.APIClient, diags diag.Diagnostics) (perimeter81Sdk.AsyncOperationStatus, diag.Diagnostics, error) {
-	networkStatus, _, err := client.NetworksApi.NetworksControllerV2Status(ctx, statusId)
+	networkStatus, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2Status(ctx, statusId).Execute()
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to get Network Status", err)
-	} else if networkStatus.Result != nil && networkStatus.Result.StatusCode == 500 {
-		diags = appendErrorDiags(diags, "Unable to get Network Status", fmt.Errorf(strings.Join(networkStatus.Result.Reason, " | ")))
+		return perimeter81Sdk.AsyncOperationStatus{}, diags, err
 	}
-	return networkStatus, diags, err
+	if networkStatus.Result != nil && networkStatus.Result.StatusCode != nil && *networkStatus.Result.StatusCode == 500 {
+		diags = appendErrorDiags(diags, "Unable to get Network Status", fmt.Errorf("%s", strings.Join(networkStatus.Result.Reason, " | ")))
+		return *networkStatus, diags, fmt.Errorf("network status error")
+	}
+	return *networkStatus, diags, err
 }
 
 /*
 addGatewayToRegion add the gateway to region
   - @param ctx context.Context - the context
   - @param client *perimeter81Sdk.APIClient - the client
-  - @param gateways []perimeter81Sdk.Gateway - the gateways
+  - @param gateways []GatewayConfig - the gateways
   - @param network_id string - the network id
   - @param region_id string - the region id
   - @param diags diag.Diagnostics - the diagnostics
 
 @return diag.Diagnostics, error - the diagnostics, the error
 */
-func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, gateways []perimeter81Sdk.Gateway, network_id string, region_id string, diags diag.Diagnostics) (diag.Diagnostics, error) {
+func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, gateways []GatewayConfig, network_id string, region_id string, diags diag.Diagnostics) (diag.Diagnostics, error) {
 	if len(gateways) == 0 {
 		return diags, nil
 	}
 	for index, gateway := range gateways {
-		gatewayPayload := perimeter81Sdk.CreateGatewayInRegionload{
-			RegionID: region_id,
+		gatewayPayload := perimeter81Sdk.CreateInstancesInNetworkPayload{
+			RegionId: region_id,
 			Idle:     gateway.Idle,
 		}
-		status, _, err := client.GatewaysApi.NetworksControllerV2AddNetworkInstance(ctx, gatewayPayload, network_id)
+		status, _, err := client.GatewaysAPI.StandardNetworksControllerV2AddNetworkInstance(ctx, network_id).CreateInstancesInNetworkPayload(gatewayPayload).Execute()
 		if err != nil {
 			diags = appendErrorDiags(diags, "Unable to create gateway", err)
 			return diags, err
 		}
-		statusId := getIdFromUrl(status.StatusUrl)
+		statusId := getIdFromUrl(status.GetStatusUrl())
 		var gatewayId string
 		var gatewayDns string
 		var gatewayIp string
@@ -686,7 +873,7 @@ func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, g
 			if err != nil {
 				return diags, err
 			}
-			if networkStatus.Completed {
+			if networkStatus.GetCompleted() {
 				gatewayId, gatewayDns, gatewayIp, diags = getGatewayInfo(ctx, network_id, region_id, *client, diags)
 				break
 			}
@@ -703,59 +890,50 @@ func addGatewayToRegion(ctx context.Context, client *perimeter81Sdk.APIClient, g
 deleteGatewayFromRegion delete the gateway from region
   - @param ctx context.Context - the context
   - @param client *perimeter81Sdk.APIClient - the client
-  - @param gateways []perimeter81Sdk.Gateway - the gateways
+  - @param gateways []GatewayConfig - the gateways
   - @param network_id string - the network id
   - @param region_id string - the region id
   - @param diags diag.Diagnostics - the diagnostics
 
 @return diag.Diagnostics, error - the diagnostics, the error
 */
-func deleteGatewayFromRegion(ctx context.Context, client *perimeter81Sdk.APIClient, gateways []perimeter81Sdk.Gateway, network_id string, region_id string, diags diag.Diagnostics) (diag.Diagnostics, error) {
+func deleteGatewayFromRegion(ctx context.Context, client *perimeter81Sdk.APIClient, gateways []GatewayConfig, network_id string, region_id string, diags diag.Diagnostics) (diag.Diagnostics, error) {
 	if len(gateways) == 0 {
 		return diags, nil
 	}
 	gatewaysForDelete := perimeter81Sdk.RemoveRegionInstance{
 		Regions: []perimeter81Sdk.RemoveRegionPayload{
 			{
-				RegionId:  region_id,
+				RegionId:  &region_id,
 				Instances: []perimeter81Sdk.RemoveInstancePayload{},
 			},
 		},
 	}
 
 	for _, gateway := range gateways {
+		id := gateway.Id
 		gatewaysForDelete.Regions[0].Instances = append(gatewaysForDelete.Regions[0].Instances, perimeter81Sdk.RemoveInstancePayload{
-			Id: gateway.Id,
+			Id: &id,
 		})
 	}
-	status, _, err := client.GatewaysApi.NetworksControllerV2DeleteNetworkInstance(ctx, gatewaysForDelete, network_id)
+	// DeleteNetworkInstance is synchronous — returns AsyncOperationResult (no status URL to poll)
+	_, _, err := client.GatewaysAPI.StandardNetworksControllerV2DeleteNetworkInstance(ctx, network_id).RemoveRegionInstance(gatewaysForDelete).Execute()
 	if err != nil {
 		diags = appendErrorDiags(diags, "Unable to delete gateways", err)
 		return diags, err
-	}
-	statusId := getIdFromUrl(status.StatusUrl)
-	for {
-		networkStatus, diags, err := checkNetworkStatus(ctx, statusId, *client, diags)
-		if err != nil {
-			return diags, err
-		}
-		if networkStatus.Completed {
-			break
-		}
-		time.Sleep(20 * time.Second)
 	}
 	return diags, nil
 }
 
 /*
 getNewGateway get the new gateway
-  - @param oldGateways []perimeter81Sdk.Gateway - the old gateways
-  - @param newGateways []perimeter81Sdk.Gateway - the new gateways
+  - @param oldGateways []GatewayConfig - the old gateways
+  - @param newGateways []GatewayConfig - the new gateways
 
-@return []perimeter81Sdk.Gateway - the new gateways
+@return []GatewayConfig - the new gateways
 */
-func getNewGateway(oldGateways []perimeter81Sdk.Gateway, newGateways []perimeter81Sdk.Gateway) []perimeter81Sdk.Gateway {
-	var gateways []perimeter81Sdk.Gateway
+func getNewGateway(oldGateways []GatewayConfig, newGateways []GatewayConfig) []GatewayConfig {
+	var gateways []GatewayConfig
 	for _, newGateway := range newGateways {
 		if !gatewayExistsInArray(newGateway.Name, oldGateways) {
 			gateways = append(gateways, newGateway)
@@ -766,13 +944,13 @@ func getNewGateway(oldGateways []perimeter81Sdk.Gateway, newGateways []perimeter
 
 /*
 getGatewayToBeDeleted get the gateway to be deleted
-  - @param oldGateways []perimeter81Sdk.Gateway - the old gateways
-  - @param newGateways []perimeter81Sdk.Gateway - the new gateways
+  - @param oldGateways []GatewayConfig - the old gateways
+  - @param newGateways []GatewayConfig - the new gateways
 
-@return []perimeter81Sdk.Gateway - the gateways
+@return []GatewayConfig - the gateways
 */
-func getGatewayToBeDeleted(oldGateways []perimeter81Sdk.Gateway, newGateways []perimeter81Sdk.Gateway) []perimeter81Sdk.Gateway {
-	var gateways []perimeter81Sdk.Gateway
+func getGatewayToBeDeleted(oldGateways []GatewayConfig, newGateways []GatewayConfig) []GatewayConfig {
+	var gateways []GatewayConfig
 	for _, oldGateway := range oldGateways {
 		if !gatewayExistsInArray(oldGateway.Name, newGateways) {
 			gateways = append(gateways, oldGateway)
@@ -848,11 +1026,11 @@ func randStringBytesRmndr() string {
 /*
 regionExistsInArray check if region exists in array
   - @param regionId string - the region id
-  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions
+  - @param regions []StandardNetworkRegionConfig - the regions
 
 @return bool - the result
 */
-func regionExistsInArray(regionId string, regions []perimeter81Sdk.CreateRegionInNetworkload) bool {
+func regionExistsInArray(regionId string, regions []StandardNetworkRegionConfig) bool {
 	for _, region := range regions {
 		if region.CpRegionId == regionId {
 			return true
@@ -864,11 +1042,11 @@ func regionExistsInArray(regionId string, regions []perimeter81Sdk.CreateRegionI
 /*
 gatewayExistsInArray check if gateway exists in array
   - @param gateway_name string - the gateway name
-  - @param gateways []perimeter81Sdk.Gateway - the gateways
+  - @param gateways []GatewayConfig - the gateways
 
 @return bool - the result
 */
-func gatewayExistsInArray(gateway_name string, gateways []perimeter81Sdk.Gateway) bool {
+func gatewayExistsInArray(gateway_name string, gateways []GatewayConfig) bool {
 	for _, gateway := range gateways {
 		if gateway.Name == gateway_name {
 			return true
@@ -879,11 +1057,11 @@ func gatewayExistsInArray(gateway_name string, gateways []perimeter81Sdk.Gateway
 
 /*
 checkGatewayDuplicatesInArray check if gateway duplicates in array
-  - @param gateways []perimeter81Sdk.Gateway - the gateways
+  - @param gateways []GatewayConfig - the gateways
 
 @return bool - the result, string - the gateway name
 */
-func checkGatewayDuplicatesInArray(gateways []perimeter81Sdk.Gateway) (bool, string) {
+func checkGatewayDuplicatesInArray(gateways []GatewayConfig) (bool, string) {
 	for _, gatewayToCheck := range gateways {
 
 		var count int
@@ -903,12 +1081,12 @@ func checkGatewayDuplicatesInArray(gateways []perimeter81Sdk.Gateway) (bool, str
 /*
 regionClonsInArray get the region clons in array
   - @param regionId string - the region id
-  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions
+  - @param regions []StandardNetworkRegionConfig - the regions
 
-@return []perimeter81Sdk.CreateRegionInNetworkload - the result
+@return []StandardNetworkRegionConfig - the result
 */
-func regionClonsInArray(regionId string, regions []perimeter81Sdk.CreateRegionInNetworkload) []perimeter81Sdk.CreateRegionInNetworkload {
-	clons := make([]perimeter81Sdk.CreateRegionInNetworkload, 0)
+func regionClonsInArray(regionId string, regions []StandardNetworkRegionConfig) []StandardNetworkRegionConfig {
+	clons := make([]StandardNetworkRegionConfig, 0)
 	for _, region := range regions {
 		if region.CpRegionId == regionId {
 			clons = append(clons, region)
@@ -919,31 +1097,31 @@ func regionClonsInArray(regionId string, regions []perimeter81Sdk.CreateRegionIn
 
 /*
 importRegions import the manually added regions
-  - @param networkData perimeter81Sdk.Network - the network data
-  - @param regionsData perimeter81Sdk.RegionsList - the regions date list
-  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the regions inside the configuration file if exists
+  - @param networkData *perimeter81Sdk.Network - the network data
+  - @param regionsData []perimeter81Sdk.Region - the regions date list
+  - @param regions []StandardNetworkRegionConfig - the regions inside the configuration file if exists
 
-@return []perimeter81Sdk.CreateRegionInNetworkload - the result
+@return []StandardNetworkRegionConfig - the result
 */
-func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sdk.RegionsList, regions []perimeter81Sdk.CreateRegionInNetworkload) []perimeter81Sdk.CreateRegionInNetworkload {
+func importRegions(networkData *perimeter81Sdk.Network, regionsData []perimeter81Sdk.Region, regions []StandardNetworkRegionConfig) []StandardNetworkRegionConfig {
 	if len(regions) == 0 {
-		regions = make([]perimeter81Sdk.CreateRegionInNetworkload, len(networkData.Regions))
+		regions = make([]StandardNetworkRegionConfig, len(networkData.Regions))
 		for i, regionItem := range networkData.Regions {
-			region := perimeter81Sdk.CreateRegionInNetworkload{}
+			region := StandardNetworkRegionConfig{}
 			region.Idle = networkData.IsDefault
 			region.RegionID = regionItem.Id
 			region.Name = regionItem.Name
 			region.Dns = regionItem.Dns
-			for _, regionInfo := range regionsData.Regions {
-				if regionInfo.DisplayName == regionItem.Name {
-					region.CpRegionId = regionInfo.Id
+			for _, regionInfo := range regionsData {
+				if regionInfo.GetDisplayName() == regionItem.Name {
+					region.CpRegionId = regionInfo.GetId()
 					break
 				}
 			}
 			if region.CpRegionId == "" {
-				for _, regionInfo := range regionsData.Regions {
-					if regionInfo.Name == regionItem.Name {
-						region.CpRegionId = regionInfo.Id
+				for _, regionInfo := range regionsData {
+					if regionInfo.GetName() == regionItem.Name {
+						region.CpRegionId = regionInfo.GetId()
 						break
 					}
 				}
@@ -957,11 +1135,11 @@ func importRegions(networkData perimeter81Sdk.Network, regionsData perimeter81Sd
 /*
 getGatewaysInArray get the manually added gateways inside a specific region inside a given network
   - @param regionId string - the region id
-  - @param network perimeter81Sdk.Network - the network that has the gateways
+  - @param network *perimeter81Sdk.Network - the network that has the gateways
 
 @return []perimeter81Sdk.NetworkInstance - the result
 */
-func getGatewaysInArray(regionId string, network perimeter81Sdk.Network) []perimeter81Sdk.NetworkInstance {
+func getGatewaysInArray(regionId string, network *perimeter81Sdk.Network) []perimeter81Sdk.NetworkInstance {
 	clons := make([]perimeter81Sdk.NetworkInstance, 0)
 
 	for _, region := range network.Regions {
@@ -974,16 +1152,17 @@ func getGatewaysInArray(regionId string, network perimeter81Sdk.Network) []perim
 }
 
 /*
-getCurrentObjectServicesInArray get the current object services from all the services
-  - @param objectsServices perimeter81Sdk.ObjectsServicesResponse - the objects services in the system
-  - @param objectServicesId string - the object services id
+getCurrentObjectServicesInArray get the current object services from all the services by name.
+The list API does not return IDs, so matching is done by name.
+  - @param objectsServices *perimeter81Sdk.ObjectsServicesResponse - the objects services in the system
+  - @param objectServicesName string - the object services name
 
 @return *perimeter81Sdk.ObjectsServicesResponseObj - the result
 */
-func getCurrentObjectServicesInArray(objectsServices *perimeter81Sdk.ObjectsServicesResponse, objectServicesId string) *perimeter81Sdk.ObjectsServicesResponseObj {
-	for _, service := range objectsServices.Data {
-		if service.Id == objectServicesId {
-			return &service
+func getCurrentObjectServicesInArray(objectsServices *perimeter81Sdk.ObjectsServicesResponse, objectServicesName string) *perimeter81Sdk.ObjectsServicesResponseObj {
+	for i, service := range objectsServices.Data {
+		if service.Name == objectServicesName {
+			return &objectsServices.Data[i]
 		}
 	}
 	return nil
@@ -999,8 +1178,8 @@ getTunnelFromNetwork get the wireguard tunnel configs
 func getWireguardConfigsFromNetwork(tunnelId string, instances perimeter81Sdk.NetworkInstance) (string, string) {
 
 	for _, tunnel := range instances.Tunnels {
-		if tunnel.Id == tunnelId {
-			return tunnel.RequestConfigToken, tunnel.Vault
+		if tunnel.NetworkTunnelWireguard != nil && tunnel.NetworkTunnelWireguard.Id == tunnelId {
+			return tunnel.NetworkTunnelWireguard.RequestConfigToken, tunnel.NetworkTunnelWireguard.Vault
 		}
 	}
 	return "", ""
@@ -1025,16 +1204,18 @@ func getInstanceFromInstances(gatewayId string, instances []perimeter81Sdk.Netwo
 
 /*
 setDefaultGatewayIpForRegions set the default gateway ip for regions
-  - @param regions []perimeter81Sdk.CreateRegionInNetworkload - the region list
-  - @param networkData []perimeter81Sdk.Network - the network data
+  - @param regions []StandardNetworkRegionConfig - the region list
+  - @param networkData *perimeter81Sdk.Network - the network data
 
-@return []perimeter81Sdk.CreateRegionInNetworkload - the result
+@return []StandardNetworkRegionConfig - the result
 */
-func setDefaultGatewayIpForRegions(regions []perimeter81Sdk.CreateRegionInNetworkload, networkData perimeter81Sdk.Network) []perimeter81Sdk.CreateRegionInNetworkload {
+func setDefaultGatewayIpForRegions(regions []StandardNetworkRegionConfig, networkData *perimeter81Sdk.Network) []StandardNetworkRegionConfig {
 
 	for index, region := range regions {
 		gateways := getGatewaysInArray(region.RegionID, networkData)
-		regions[index].DefaultGatewayIp = gateways[0].Ip
+		if len(gateways) > 0 {
+			regions[index].DefaultGatewayIp = gateways[0].Ip
+		}
 	}
 	return regions
 }
@@ -1071,32 +1252,53 @@ func flattenProtocolsDataSourceData(protocolItems []perimeter81Sdk.ObjectsServic
 		protocols := make([]interface{}, len(protocolItems))
 		for i, protocolItem := range protocolItems {
 			protocol := make(map[string]interface{})
-			protocol["protocol"] = protocolItem.Protocol
-			protocol["value_type"] = protocolItem.ValueType
-			protocol["value"] = protocolItem.Value
+			if protocolItem.ObjectServiceProtocolTCPUDP != nil {
+				tcpudp := protocolItem.ObjectServiceProtocolTCPUDP
+				protocol["protocol"] = ""
+				if tcpudp.ObjectServiceProtocolList != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolList.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolList.Value
+				} else if tcpudp.ObjectServiceProtocolRange != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolRange.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolRange.Value
+				} else if tcpudp.ObjectServiceProtocolSingle != nil {
+					protocol["value_type"] = tcpudp.ObjectServiceProtocolSingle.ValueType
+					protocol["value"] = tcpudp.ObjectServiceProtocolSingle.Value
+				} else {
+					protocol["value_type"] = ""
+					protocol["value"] = []int32{}
+				}
+			} else {
+				protocol["protocol"] = ""
+				protocol["value_type"] = ""
+				protocol["value"] = []int32{}
+			}
 			protocols[i] = protocol
 		}
 		return protocols
 	}
 	return make([]interface{}, 0)
 }
+
 /*
 getCurrentObjectAddressesInArray get the current object addresses from all the addresses
   - @param objectsAddresses perimeter81Sdk.ObjectsAddressesResponse - the objects addresses in the system
   - @param objectAddressesId string - the object addresses id
-@return *perimeter81Sdk.ObjectsAddressesResponseObj - the result
+
+@return *perimeter81Sdk.ObjectsAddressObj - the result
 */
 func getCurrentObjectAddressesInArray(objectsAddresses *perimeter81Sdk.ObjectsAddressesResponse, objectAddressesId string) *perimeter81Sdk.ObjectsAddressObj {
-	for _, address := range objectsAddresses.Data {
-		if address.Id == objectAddressesId {
-			return &address
+	for i, address := range objectsAddresses.Data {
+		if address.GetId() == objectAddressesId {
+			return &objectsAddresses.Data[i]
 		}
 	}
 	return nil
 }
+
 /*
 flattenObjectAddressesData flatten ObjectAddresses data
-  - @param objectAddressesItems []perimeter81Sdk.ObjectsAddressesObj - the object services that need to be flattened
+  - @param objectAddressesItems []perimeter81Sdk.ObjectsAddressObj - the object services that need to be flattened
 
 @return []interface{} - the flattened object addressess data
 */
@@ -1109,7 +1311,6 @@ func flattenObjectAddressesData(objectAddressesItems []perimeter81Sdk.ObjectsAdd
 			objectAddress["description"] = objectAddressesItem.Name
 			objectAddress["value_type"] = objectAddressesItem.ValueType
 			objectAddress["value"] = objectAddressesItem.Value
-			objectAddress["ip_version"] = objectAddressesItem.IpVersion
 			objectAddresses[i] = objectAddress
 		}
 		return objectAddresses

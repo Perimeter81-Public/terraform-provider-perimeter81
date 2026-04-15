@@ -133,7 +133,7 @@ func resourceOpenvpnCreate(ctx context.Context, d *schema.ResourceData, m interf
 		TunnelName: tunnelName,
 	}
 	// create the tunnel and check for errors
-	status, _, err := client.OpenVPNApi.CreateOpenVPNTunnel(ctx, baseTunnelBody, networkId)
+	status, _, err := client.OpenVPNAPI.StandardCreateOpenVPNTunnel(ctx, networkId).BaseTunnelValues(baseTunnelBody).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create Openvpn tunnel", err)
@@ -141,7 +141,7 @@ func resourceOpenvpnCreate(ctx context.Context, d *schema.ResourceData, m interf
 
 	// get the status id from the status url
 	var openvpnTunnelId string
-	statusId := getIdFromUrl(status.StatusUrl)
+	statusId := getIdFromUrl(status.GetStatusUrl())
 
 	// check the status of the tunnel creation
 	for {
@@ -151,7 +151,7 @@ func resourceOpenvpnCreate(ctx context.Context, d *schema.ResourceData, m interf
 			return diags
 		}
 		// if the status is completed, get the tunnel id and break the loop
-		if networkStatus.Completed {
+		if networkStatus.GetCompleted() {
 			openvpnTunnelId, diags = getTunnelId(ctx, networkId, baseTunnelBody, *client, diags)
 			if openvpnTunnelId == "" {
 				return diags
@@ -193,7 +193,7 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	// get the tunnel and check for errors
-	tunnel, _, err := client.OpenVPNApi.GetOpenVPNTunnel(ctx, networkId, tunnelId)
+	tunnel, _, err := client.OpenVPNAPI.StandardGetOpenVPNTunnel(ctx, networkId, tunnelId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read openvpn tunnel", err)
@@ -215,19 +215,19 @@ func resourceOpenvpnRead(ctx context.Context, d *schema.ResourceData, m interfac
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set gateway id", err)
 	}
-	if err := d.Set("access_key_id", tunnel.AccessKeyId); err != nil {
+	if err := d.Set("access_key_id", tunnel.GetAccessKeyId()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set access key id", err)
 	}
-	if err := d.Set("secret_access_key", tunnel.SecretAccessKey); err != nil {
+	if err := d.Set("secret_access_key", tunnel.GetSecretAccessKey()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set secret access key", err)
 	}
-	if err := d.Set("type", tunnel.Type_); err != nil {
+	if err := d.Set("type", tunnel.GetType()); err != nil {
 		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set secret access key", err)
+		return appendErrorDiags(diags, "Unable to set type", err)
 	}
-	if err := d.Set("updated_at", tunnel.UpdatedAt.String()); err != nil {
+	if err := d.Set("updated_at", tunnel.GetUpdatedAt().String()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set updated at", err)
 	}
@@ -260,14 +260,14 @@ func resourceOpenvpnUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		tunnelId := d.Id()
 		networkId := d.Get("network_id").(string)
 		// update the tunnel and check for errors
-		status, _, err := client.OpenVPNApi.UpdateOpenVPNTunnel(ctx, networkId, tunnelId)
+		status, _, err := client.OpenVPNAPI.StandardUpdateOpenVPNTunnel(ctx, networkId, tunnelId).Execute()
 		if err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update openvpn Tunnel", err)
 		}
 
 		// get the status id from the status url
-		statusId := getIdFromUrl(status.StatusUrl)
+		statusId := getIdFromUrl(status.GetStatusUrl())
 
 		// check the status of the tunnel update
 		for {
@@ -278,7 +278,7 @@ func resourceOpenvpnUpdate(ctx context.Context, d *schema.ResourceData, m interf
 				return diags
 			}
 			// if the status is completed, break the loop
-			if networkStatus.Completed {
+			if networkStatus.GetCompleted() {
 				break
 			}
 			// sleep for 20 seconds and check the status again
@@ -309,14 +309,14 @@ func resourceOpenvpnDelete(ctx context.Context, d *schema.ResourceData, m interf
 	networkId := d.Get("network_id").(string)
 
 	// delete the tunnel and check for errors
-	status, _, err := client.OpenVPNApi.DeleteOpenVPNTunnel(ctx, networkId, tunnelId)
+	status, _, err := client.OpenVPNAPI.StandardDeleteOpenVPNTunnel(ctx, networkId, tunnelId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to delete openvpn tunnel", err)
 	}
 
 	// get the status id from the status url
-	statusId := getIdFromUrl(status.StatusUrl)
+	statusId := getIdFromUrl(status.GetStatusUrl())
 	// check the status of the tunnel deletion
 	for {
 		// check the status of the tunnel deletion and check for errors
@@ -326,7 +326,7 @@ func resourceOpenvpnDelete(ctx context.Context, d *schema.ResourceData, m interf
 			return diags
 		}
 		// if the status is completed, break the loop
-		if networkStatus.Completed {
+		if networkStatus.GetCompleted() {
 			break
 		}
 		// sleep for 20 seconds and check the status again

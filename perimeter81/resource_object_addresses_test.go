@@ -34,7 +34,7 @@ func TestAccObjectAddresses_basic(t *testing.T) {
 			{
 				Config: testAccObjectAddressUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectAddressExists("perimeter81_object_services.os", &objectAddress),
+					testAccCheckObjectAddressExists("perimeter81_object_addresses.oa", &objectAddress),
 					testAccCheckObjectAddressesAttributes(&objectAddress, &testAccObjectAddressExpectedAttributes{
 						Name:        "test-os-updated",
 						Description: "10.30.0.91/16",
@@ -60,11 +60,14 @@ func testAccCheckObjectAddressExists(n string, objectAddress *perimeter81Sdk.Obj
 		}
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
-		objectsAddresses, _, err := conn.ObjectsAddressesApi.GetObjectsAddresses(ctx)
+		objectsAddresses, _, err := conn.ObjectsAddressesAPI.GetObjectsAddresses(ctx).Execute()
 		if err != nil {
-			return fmt.Errorf("No ObjectServices found")
+			return fmt.Errorf("No ObjectAddresses found")
 		}
-		currentObjectAddress := getCurrentObjectAddressesInArray(&objectsAddresses, ObjectAddressID)
+		currentObjectAddress := getCurrentObjectAddressesInArray(objectsAddresses, ObjectAddressID)
+		if currentObjectAddress == nil {
+			return fmt.Errorf("ObjectAddress with ID %q not found", ObjectAddressID)
+		}
 
 		*objectAddress = *currentObjectAddress
 		return nil
@@ -84,8 +87,8 @@ func testAccCheckObjectAddressesAttributes(objectAddress *perimeter81Sdk.Objects
 			return fmt.Errorf("got name %q; want %q", objectAddress.Name, want.Name)
 		}
 
-		if objectAddress.Description != want.Description {
-			return fmt.Errorf("got description %q; want %q", objectAddress.Description, want.Description)
+		if objectAddress.GetDescription() != want.Description {
+			return fmt.Errorf("got description %q; want %q", objectAddress.GetDescription(), want.Description)
 		}
 
 		if objectAddress.ValueType != want.ValueType {
@@ -106,7 +109,7 @@ resource "perimeter81_object_addresses" "os" {
   name = "test-os"
   description = "10.30.0.90/16"
   value_type = "single"
-  value = ["193.168.3.1""]
+  value = ["193.168.3.1"]
 }
   `
 	return config
@@ -114,11 +117,11 @@ resource "perimeter81_object_addresses" "os" {
 
 func testAccObjectAddressUpdateConfig() string {
 	config := `
-resource "perimeter81_object_addresses" "os" {
+resource "perimeter81_object_addresses" "oa" {
   name = "test-os-updated"
   description = "10.30.0.91/16"
   value_type = "list"
-  value = ["193.168.3.2""]
+  value = ["193.168.3.2"]
 }
   `
 	return config

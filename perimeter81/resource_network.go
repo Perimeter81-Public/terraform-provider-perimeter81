@@ -138,25 +138,34 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 	subnet := network["subnet"].(string)
 	regions := flattenRegionsData(d.Get("region").([]interface{}))
 
+	// convert region configs to CreateRegionInNetworkPayload
+	regionPayloads := make([]perimeter81Sdk.CreateRegionInNetworkPayload, len(regions))
+	for i, r := range regions {
+		regionPayloads[i] = perimeter81Sdk.CreateRegionInNetworkPayload{
+			HarmonySaseRegionId: r.CpRegionId,
+			Idle:                r.Idle,
+		}
+	}
+
 	// create the network payload
 	CreateNetworkPayload := perimeter81Sdk.CreateNetworkPayload{
-		Name: name,
-		Tags: tags,
-		Subnet: subnet,
+		Name:   name,
+		Tags:   tags,
+		Subnet: &subnet,
 	}
 	DeployNetworkPayload := perimeter81Sdk.DeployNetworkPayload{
-		Network: &CreateNetworkPayload,
-		Regions: regions,
+		Network: CreateNetworkPayload,
+		Regions: regionPayloads,
 	}
 	// create the network and check for errors
-	status, _, err := client.NetworksApi.NetworksControllerV2NetworkCreate(ctx, DeployNetworkPayload)
+	status, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkCreate(ctx).DeployNetworkPayload(DeployNetworkPayload).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create Network", err)
 	}
 
 	// get the status id from the status url
-	statusId := getIdFromUrl(status.StatusUrl)
+	statusId := getIdFromUrl(status.GetStatusUrl())
 	var networkId string
 	// check the status of the network creation
 	for {
@@ -164,7 +173,7 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 		var networkStatus perimeter81Sdk.AsyncOperationStatus
 		networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
 		if err != nil {
-			networks, _, err := client.NetworksApi.GetNetworks(ctx)
+			networks, _, err := client.StandardNetworksAPI.StandardGetNetworks(ctx).Execute()
 			if err != nil {
 				d.Partial(true)
 				return appendErrorDiags(diags, "Unable to Create Network", err)
@@ -179,8 +188,8 @@ func resourceNetworkCreate(ctx context.Context, d *schema.ResourceData, m interf
 			return diags
 		}
 		// if the network creation is completed, get the network id and break the loop
-		if networkStatus.Completed {
-			networkId = getIdFromUrl(networkStatus.Result.Resource)
+		if networkStatus.GetCompleted() {
+			networkId = getIdFromUrl(networkStatus.Result.GetResource())
 			break
 		}
 		// sleep for 60 seconds and check the status again
@@ -209,14 +218,14 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	// get the network id from the resource data
 	networkId := d.Id()
 	// get the network data and check for errors
-	networkData, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, networkId)
+	networkData, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to find Network", err)
 	}
 
 	// get the regions data and check for errors
-	regionsData, _, err := client.RegionsApi.NetworksControllerV2GetRegions(ctx)
+	regionsData, _, err := client.RegionsAPI.StandardNetworksControllerV2GetRegions(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to get CpRegions", err)
@@ -231,8 +240,7 @@ func resourceNetworkRead(ctx context.Context, d *schema.ResourceData, m interfac
 	CreateNetworkPayload := perimeter81Sdk.CreateNetworkPayload{
 		Name:   networkData.Name,
 		Tags:   networkData.Tags,
-		Subnet: networkData.Subnet,
-		Dns:    networkData.Dns,
+		Subnet: &networkData.Subnet,
 	}
 	// set the network data and the regions data
 	network := flattenNetworkData([]perimeter81Sdk.CreateNetworkPayload{CreateNetworkPayload})
@@ -273,10 +281,10 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		tags := flattenStringsArrayData(network["tags"].([]interface{}))
 
 		// creata the update payload
-		networkDto := perimeter81Sdk.BaseNetworkDto{Name: name, Tags: tags}
-		updateNetworkDto := perimeter81Sdk.UpdateNetworkDto{Network: &networkDto}
+		networkDto := perimeter81Sdk.BaseNetworkDto{Name: &name, Tags: tags}
+		updateNetworkDto := perimeter81Sdk.UpdateNetworkDto{Network: networkDto}
 		// update the network and check for errors
-		_, _, err := client.NetworksApi.NetworksControllerV2NetworkUpdate(ctx, updateNetworkDto, networkId)
+		_, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkUpdate(ctx, networkId).UpdateNetworkDto(updateNetworkDto).Execute()
 		if err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update Network", err)
@@ -299,26 +307,29 @@ func resourceNetworkUpdate(ctx context.Context, d *schema.ResourceData, m interf
 			return appendErrorDiags(diags, "Unable to update network region "+cpRegionId, err)
 		}
 		// Delete old region from the network if any and check for errors
-		statusId, RegionId, err := resourceRegionDelete(ctx, networkId, oldRegionsFlattened, newRegionsFlattened, d, client, statusId)
+		var RegionId string
+		statusId, RegionId, err = resourceRegionDelete(ctx, networkId, oldRegionsFlattened, newRegionsFlattened, d, client, statusId)
 		if err != nil {
 			return appendErrorDiags(diags, "Unable to delete network region "+RegionId, err)
 		}
 		d.Set("last_updated", time.Now().Format(time.RFC850))
-		// wait for the network to be updated with the regions
-		for {
-			// check the network status and check for errors
-			var networkStatus perimeter81Sdk.AsyncOperationStatus
-			networkStatus, diags, err := checkNetworkStatus(ctx, statusId, *client, diags)
-			if err != nil {
-				d.Partial(true)
-				return diags
+		// wait for the network to be updated with the regions (if a status id is available)
+		if statusId != "" {
+			for {
+				// check the network status and check for errors
+				var networkStatus perimeter81Sdk.AsyncOperationStatus
+				networkStatus, diags, err = checkNetworkStatus(ctx, statusId, *client, diags)
+				if err != nil {
+					d.Partial(true)
+					return diags
+				}
+				// if the network status is completed break the loop
+				if networkStatus.GetCompleted() {
+					break
+				}
+				// wait for 60 seconds and check again
+				time.Sleep(60 * time.Second)
 			}
-			// if the network status is completed break the loop
-			if networkStatus.Completed {
-				break
-			}
-			// wait for 60 seconds and check again
-			time.Sleep(60 * time.Second)
 		}
 	}
 
@@ -341,28 +352,11 @@ func resourceNetworkDelete(ctx context.Context, d *schema.ResourceData, m interf
 
 	// get the network id from the resource data
 	networkId := d.Id()
-	// delete the network and check for errors
-	status, _, err := client.NetworksApi.NetworksControllerV2NetworkDelete(ctx, networkId)
+	// delete the network and check for errors (synchronous operation — returns AsyncOperationResult, no status URL)
+	_, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkDelete(ctx, networkId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to delete network", err)
-	}
-	// get the status id from the status url
-	statusId := getIdFromUrl(status.StatusUrl)
-	// wait for the network to be deleted
-	for {
-		// check the network status and check for errors
-		networkStatus, diags, err := checkNetworkStatus(ctx, statusId, *client, diags)
-		if err != nil {
-			d.Partial(true)
-			return diags
-		}
-		// if the network status is completed break the loop
-		if networkStatus.Completed {
-			break
-		}
-		// wait for 20 seconds and check again
-		time.Sleep(20 * time.Second)
 	}
 	d.SetId("")
 	return diags

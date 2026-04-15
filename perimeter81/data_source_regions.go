@@ -76,14 +76,14 @@ func dataSourceRegionsRead(ctx context.Context, d *schema.ResourceData, m interf
 	ctx = context.Background()
 
 	// call the api and check if there is an error
-	regionsData, _, err := client.RegionsApi.NetworksControllerV2GetRegions(ctx)
+	regionsData, _, err := client.RegionsAPI.StandardNetworksControllerV2GetRegions(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to get Regions data", err)
 	}
 
 	// flatten the data so it fit the terraform schema and set the terraform resource data
-	if err := d.Set("regions", flattenRegions(regionsData.Regions)); err != nil {
+	if err := d.Set("regions", flattenRegions(regionsData)); err != nil {
 		d.Partial(true)
 		return diag.FromErr(err)
 	}

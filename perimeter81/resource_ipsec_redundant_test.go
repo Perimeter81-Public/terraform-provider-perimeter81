@@ -13,7 +13,7 @@ import (
 
 func TestAccIpsecRedundant_basic(t *testing.T) {
 	t.Parallel()
-	var tunnel perimeter81Sdk.IpSecRedundantTunnels
+	var tunnel perimeter81Sdk.IPSecRedundantTunnels
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -22,24 +22,23 @@ func TestAccIpsecRedundant_basic(t *testing.T) {
 				Config: testAccIpsecRedundantConfig(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckIpsecRedundantExists("perimeter81_ipsec_redundant.ipsr1", &tunnel),
-					testAccCheckIpsecRedundantAttributes(&tunnel, &perimeter81Sdk.IpSecRedundantTunnels{
-						TunnelName: "ipseed",
-						SharedSettings: &perimeter81Sdk.IpSecSharedSettings{
+					testAccCheckIpsecRedundantAttributes(&tunnel, &perimeter81Sdk.IPSecRedundantTunnels{
+						SharedSettings: &perimeter81Sdk.IPSecSharedSettings{
 							P81GatewaySubnets:    []string{"0.0.0.0/0"},
 							RemoteGatewaySubnets: []string{"0.0.0.0/0"},
 						},
-						AdvancedSettings: &perimeter81Sdk.IpSecAdvancedSettings{
+						AdvancedSettings: &perimeter81Sdk.IPSecAdvancedSettings{
 							KeyExchange: "ikev2",
 							IkeLifeTime: "8h",
 							Lifetime:    "1h",
 							DpdDelay:    "10s",
 							DpdTimeout:  "30s",
-							Phase1: &perimeter81Sdk.IpSecPhase{
+							Phase1: perimeter81Sdk.IPSecPhaseConfig{
 								Auth:       []string{"3des"},
 								Encryption: []string{"sha256"},
 								Dh:         []int32{14},
 							},
-							Phase2: &perimeter81Sdk.IpSecPhase{
+							Phase2: perimeter81Sdk.IPSecPhaseConfig{
 								Auth:       []string{"3des"},
 								Encryption: []string{"sha256"},
 								Dh:         []int32{14},
@@ -52,7 +51,7 @@ func TestAccIpsecRedundant_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckIpsecRedundantExists(n string, tunnel *perimeter81Sdk.IpSecRedundantTunnels) resource.TestCheckFunc {
+func testAccCheckIpsecRedundantExists(n string, tunnel *perimeter81Sdk.IPSecRedundantTunnels) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -66,26 +65,29 @@ func testAccCheckIpsecRedundantExists(n string, tunnel *perimeter81Sdk.IpSecRedu
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
 		networkId := rs.Primary.Attributes["network_id"]
-		gotIpsecRedundant, _, err := conn.IPSecRedundantApi.GetIPSecRedundantTunnel(ctx, networkId, tunnelId)
+		gotIpsecRedundant, _, err := conn.IPSecRedundantAPI.StandardGetIPSecRedundantTunnel(ctx, networkId, tunnelId).Execute()
 		if err != nil {
 			return err
 		}
 
-		*tunnel = gotIpsecRedundant
+		*tunnel = *gotIpsecRedundant
 		return nil
 	}
 }
 
-func testAccCheckIpsecRedundantAttributes(tunnel *perimeter81Sdk.IpSecRedundantTunnels, want *perimeter81Sdk.IpSecRedundantTunnels) resource.TestCheckFunc {
+func testAccCheckIpsecRedundantAttributes(tunnel *perimeter81Sdk.IPSecRedundantTunnels, want *perimeter81Sdk.IPSecRedundantTunnels) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		if tunnel.SharedSettings == nil {
+			return fmt.Errorf("got nil shared settings")
+		}
 		if !testComparableArraiesEq(tunnel.SharedSettings.P81GatewaySubnets, want.SharedSettings.P81GatewaySubnets) {
 			return fmt.Errorf("got p81 gateway subnets %q; want %q", tunnel.SharedSettings.P81GatewaySubnets, want.SharedSettings.P81GatewaySubnets)
 		}
 		if !testComparableArraiesEq(tunnel.SharedSettings.RemoteGatewaySubnets, want.SharedSettings.RemoteGatewaySubnets) {
 			return fmt.Errorf("got remote gateway subnets %q; want %q", tunnel.SharedSettings.RemoteGatewaySubnets, want.SharedSettings.RemoteGatewaySubnets)
 		}
-		if tunnel.TunnelName != want.TunnelName {
-			return fmt.Errorf("got tunnel name %q; want %q", tunnel.TunnelName, want.TunnelName)
+		if tunnel.AdvancedSettings == nil {
+			return fmt.Errorf("got nil advanced settings")
 		}
 		if tunnel.AdvancedSettings.IkeLifeTime != want.AdvancedSettings.IkeLifeTime {
 			return fmt.Errorf("got ike life time %q; want %q", tunnel.AdvancedSettings.IkeLifeTime, want.AdvancedSettings.IkeLifeTime)
@@ -96,16 +98,22 @@ func testAccCheckIpsecRedundantAttributes(tunnel *perimeter81Sdk.IpSecRedundantT
 		if tunnel.AdvancedSettings.DpdTimeout != want.AdvancedSettings.DpdTimeout {
 			return fmt.Errorf("got dpd timeout %q; want %q", tunnel.AdvancedSettings.DpdTimeout, want.AdvancedSettings.DpdTimeout)
 		}
+		if tunnel.Tunnel1 == nil {
+			return fmt.Errorf("got nil tunnel1")
+		}
 		if tunnel.Tunnel1.GatewayID == "" {
 			return fmt.Errorf("got Gateway id empty for tunnel 1")
+		}
+		if tunnel.Tunnel2 == nil {
+			return fmt.Errorf("got nil tunnel2")
 		}
 		if tunnel.Tunnel2.GatewayID == "" {
 			return fmt.Errorf("got Gateway id empty for tunnel 2")
 		}
-		if tunnel.Tunnel1.TunnelID == "" {
+		if tunnel.Tunnel1.GetTunnelID() == "" {
 			return fmt.Errorf("got Tunnel id empty for tunnel 1")
 		}
-		if tunnel.Tunnel2.GatewayID == "" {
+		if tunnel.Tunnel2.GetTunnelID() == "" {
 			return fmt.Errorf("got Tunnel id empty for tunnel 2")
 		}
 		if !testComparableArraiesEq(tunnel.AdvancedSettings.Phase1.Auth, want.AdvancedSettings.Phase1.Auth) {
@@ -115,7 +123,7 @@ func testAccCheckIpsecRedundantAttributes(tunnel *perimeter81Sdk.IpSecRedundantT
 			return fmt.Errorf("got phase1 encryption %q; want %q", tunnel.AdvancedSettings.Phase1.Encryption, want.AdvancedSettings.Phase1.Encryption)
 		}
 		if !testComparableArraiesEq(tunnel.AdvancedSettings.Phase1.Dh, want.AdvancedSettings.Phase1.Dh) {
-			return fmt.Errorf("got phase1 encryption %q; want %q", tunnel.AdvancedSettings.Phase1.Dh, want.AdvancedSettings.Phase1.Dh)
+			return fmt.Errorf("got phase1 dh %q; want %q", tunnel.AdvancedSettings.Phase1.Dh, want.AdvancedSettings.Phase1.Dh)
 		}
 		if !testComparableArraiesEq(tunnel.AdvancedSettings.Phase2.Auth, want.AdvancedSettings.Phase2.Auth) {
 			return fmt.Errorf("got phase2 auth %q; want %q", tunnel.AdvancedSettings.Phase2.Auth, want.AdvancedSettings.Phase2.Auth)

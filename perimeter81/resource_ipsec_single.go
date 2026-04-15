@@ -230,17 +230,17 @@ func resourceIpsecSingleCreate(ctx context.Context, d *schema.ResourceData, m in
 	dhPhase2 := flattenIntsArrayData(phase2Data["dh"].([]interface{}))
 
 	// create the ipsec single payload
-	phase1 := perimeter81Sdk.IpSecPhase{
+	phase1 := perimeter81Sdk.IPSecPhaseConfig{
 		Auth:       authPhase1,
 		Encryption: encryptionPhase1,
 		Dh:         dhPhase1,
 	}
-	phase2 := perimeter81Sdk.IpSecPhase{
+	phase2 := perimeter81Sdk.IPSecPhaseConfig{
 		Auth:       authPhase2,
 		Encryption: encryptionPhase2,
 		Dh:         dhPhase2,
 	}
-	ipSecSingleBody := perimeter81Sdk.CreateIpSecSinglePayload{
+	ipSecSingleBody := perimeter81Sdk.CreateIPSecSinglePayload{
 		RegionID:             regionId,
 		GatewayID:            gatewayId,
 		TunnelName:           tunnelName,
@@ -252,13 +252,13 @@ func resourceIpsecSingleCreate(ctx context.Context, d *schema.ResourceData, m in
 		DpdTimeout:           dpdTimeout,
 		DpdDelay:             dpdDelay,
 		P81GatewaySubnets:    p81GatewaySubnets,
-		Phase1:               &phase1,
-		Phase2:               &phase2,
+		Phase1:               phase1,
+		Phase2:               phase2,
 		RemoteGatewaySubnets: remoteGatewaySubnets,
 	}
 
 	// create the ipsec single tunnel and check for errors
-	status, _, err := client.IPSecSingleApi.CreateIPSecSingleTunnel(ctx, ipSecSingleBody, networkId)
+	status, _, err := client.IPSecSingleAPI.StandardCreateIPSecSingleTunnel(ctx, networkId).CreateIPSecSinglePayload(ipSecSingleBody).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create IpsecSingle tunnel", err)
@@ -266,7 +266,7 @@ func resourceIpsecSingleCreate(ctx context.Context, d *schema.ResourceData, m in
 
 	// get the status id of the ipsec-single tunnel creation
 	var ipSecSingleTunnelId string
-	statusId := getIdFromUrl(status.StatusUrl)
+	statusId := getIdFromUrl(status.GetStatusUrl())
 
 	// check the status of the ipsec-redundant tunnel creation
 	for {
@@ -277,7 +277,7 @@ func resourceIpsecSingleCreate(ctx context.Context, d *schema.ResourceData, m in
 			return diags
 		}
 		// if the network status is completed, get the ipsec-single tunnel id and break the loop
-		if networkStatus.Completed {
+		if networkStatus.GetCompleted() {
 			baseTunnelBody := perimeter81Sdk.BaseTunnelValues{
 				RegionID:   regionId,
 				GatewayID:  gatewayId,
@@ -324,7 +324,7 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	// get the ipsec-single tunnel and check for errors
-	tunnel, _, err := client.IPSecSingleApi.GetIPSecSingleTunnel(ctx, networkId, tunnelId)
+	tunnel, _, err := client.IPSecSingleAPI.StandardGetIPSecSingleTunnel(ctx, networkId, tunnelId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read ipsec-single tunnel", err)
@@ -334,19 +334,22 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set createdAt", err)
 	}
-	if err := d.Set("updated_at", tunnel.UpdatedAt.String()); err != nil {
+	if err := d.Set("updated_at", tunnel.GetUpdatedAt().String()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set updatedAt", err)
 	}
-	if err := d.Set("remote_id", tunnel.RemoteID); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set remoteId", err)
+	// RemoteID is a union type wrapping an optional string
+	if tunnel.RemoteID != nil && tunnel.RemoteID.String != nil {
+		if err := d.Set("remote_id", *tunnel.RemoteID.String); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set remoteId", err)
+		}
 	}
 	if err := d.Set("key_exchange", tunnel.KeyExchange); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set keyExchange", err)
 	}
-	if err := d.Set("remote_public_ip", tunnel.RemotePublicIP); err != nil {
+	if err := d.Set("remote_public_ip", tunnel.GetRemotePublicIP()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Remote Public IP", err)
 	}
@@ -354,7 +357,7 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set ike lifetime", err)
 	}
-	if err := d.Set("lifetime", tunnel.LifeTime); err != nil {
+	if err := d.Set("lifetime", tunnel.Lifetime); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set lifetime", err)
 	}
@@ -366,7 +369,7 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Dpd timeout", err)
 	}
-	if err := d.Set("passphrase", tunnel.Passphrase); err != nil {
+	if err := d.Set("passphrase", tunnel.GetPassphrase()); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set passphrase", err)
 	}
@@ -394,11 +397,11 @@ func resourceIpsecSingleRead(ctx context.Context, d *schema.ResourceData, m inte
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set remote subnets", err)
 	}
-	if err := d.Set("phase1", flattenPhasesData(tunnel.Phase1)); err != nil {
+	if err := d.Set("phase1", flattenPhasesData(&tunnel.Phase1)); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set phase1", err)
 	}
-	if err := d.Set("phase2", flattenPhasesData(tunnel.Phase2)); err != nil {
+	if err := d.Set("phase2", flattenPhasesData(&tunnel.Phase2)); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set phase2", err)
 	}
@@ -445,41 +448,45 @@ func resourceIpsecSingleUpdate(ctx context.Context, d *schema.ResourceData, m in
 		dhPhase2 := flattenIntsArrayData(phase2Data["dh"].([]interface{}))
 
 		// create the ipsec-single tunnel body
-		phase1 := perimeter81Sdk.IpSecPhase{
+		phase1 := perimeter81Sdk.IPSecPhaseConfig{
 			Auth:       authPhase1,
 			Encryption: encryptionPhase1,
 			Dh:         dhPhase1,
 		}
-		phase2 := perimeter81Sdk.IpSecPhase{
+		phase2 := perimeter81Sdk.IPSecPhaseConfig{
 			Auth:       authPhase2,
 			Encryption: encryptionPhase2,
 			Dh:         dhPhase2,
 		}
 
-		ipSecSingleDetails := perimeter81Sdk.IpSecSingleDetails{
+		ipSecSingleDetails := perimeter81Sdk.IPSecSingleDetails{
 			KeyExchange:          keyExchange,
-			RemotePublicIP:       remotePublicIP,
-			Passphrase:           passphrase,
+			RemotePublicIP:       &remotePublicIP,
+			Passphrase:           &passphrase,
 			DpdTimeout:           dpdTimeout,
 			DpdDelay:             dpdDelay,
 			Lifetime:             lifetime,
 			IkeLifeTime:          ikeLifeTime,
 			P81GatewaySubnets:    p81GatewaySubnets,
 			RemoteGatewaySubnets: remoteGatewaySubnets,
-			Phase1:               &phase1,
-			Phase2:               &phase2,
-			RemoteID:             remoteId,
+			Phase1:               phase1,
+			Phase2:               phase2,
+		}
+		// set remote_id only if provided
+		if remoteId != "" {
+			remoteIdValue := perimeter81Sdk.StringAsRemoteID(&remoteId)
+			ipSecSingleDetails.RemoteID = &remoteIdValue
 		}
 
 		// update the ipsec-single tunnel and check for errors
-		status, _, err := client.IPSecSingleApi.UpdateIPSecSingleTunnel(ctx, ipSecSingleDetails, networkId, tunnelId)
+		status, _, err := client.IPSecSingleAPI.StandardUpdateIPSecSingleTunnel(ctx, networkId, tunnelId).IPSecSingleDetails(ipSecSingleDetails).Execute()
 		if err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update ipsec-single Tunnel", err)
 		}
 
 		// get the status id from the status url
-		statusId := getIdFromUrl(status.StatusUrl)
+		statusId := getIdFromUrl(status.GetStatusUrl())
 
 		// check the status of the ipsec-single tunnel and check for errors
 		for {
@@ -490,7 +497,7 @@ func resourceIpsecSingleUpdate(ctx context.Context, d *schema.ResourceData, m in
 				return diags
 			}
 			// if the ipsec-single tunnel status is completed break the loop
-			if networkStatus.Completed {
+			if networkStatus.GetCompleted() {
 				break
 			}
 			// sleep for 20 seconds
@@ -521,14 +528,14 @@ func resourceIpsecSingleDelete(ctx context.Context, d *schema.ResourceData, m in
 	networkId := d.Get("network_id").(string)
 
 	// delete the ipsec-single tunnel and check for errors
-	status, _, err := client.IPSecSingleApi.DeleteIPSecSingleTunnel(ctx, networkId, tunnelId)
+	status, _, err := client.IPSecSingleAPI.StandardDeleteIPSecSingleTunnel(ctx, networkId, tunnelId).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to delete ipsec-single tunnel", err)
 	}
 
 	// get the status id from the status url
-	statusId := getIdFromUrl(status.StatusUrl)
+	statusId := getIdFromUrl(status.GetStatusUrl())
 	// check the status of the ipsec-single tunnel and check for errors
 	for {
 		// check the status of the ipsec-single tunnel and check for errors
@@ -538,7 +545,7 @@ func resourceIpsecSingleDelete(ctx context.Context, d *schema.ResourceData, m in
 			return diags
 		}
 		// if the ipsec-single tunnel status is completed break the loop
-		if networkStatus.Completed {
+		if networkStatus.GetCompleted() {
 			break
 		}
 		// sleep for 20 seconds

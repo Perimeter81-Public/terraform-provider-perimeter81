@@ -1,6 +1,8 @@
 module terraform-provider-perimeter81
 
-go 1.19
+go 1.26.2
+
+replace github.com/Perimeter81-Public/perimeter-81-client-sdk => ../perimeter-81-client-sdk
 
 require (
 	github.com/Perimeter81-Public/perimeter-81-client-sdk v1.19.0
@@ -69,5 +71,5 @@ require (
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.56.3 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/validator.v2 v2.0.1 // indirect
 )

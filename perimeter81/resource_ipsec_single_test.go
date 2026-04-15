@@ -15,7 +15,7 @@ var randNameIpsecSignle string = randStringBytesRmndr()
 
 func TestAccIpsecSingle_basic(t *testing.T) {
 	t.Parallel()
-	var tunnel perimeter81Sdk.IpSecSingleTunnel
+	var tunnel perimeter81Sdk.IPSecSingleTunnel
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -34,12 +34,12 @@ func TestAccIpsecSingle_basic(t *testing.T) {
 						DpdTimeout:           "40s",
 						Passphrase:           "tnEgVbTJE23",
 						RemotePublicIP:       "198.51.100.41",
-						Phase1: perimeter81Sdk.IpSecPhase{
+						Phase1: perimeter81Sdk.IPSecPhaseConfig{
 							Auth:       []string{"3des"},
 							Encryption: []string{"sha256"},
 							Dh:         []int32{14},
 						},
-						Phase2: perimeter81Sdk.IpSecPhase{
+						Phase2: perimeter81Sdk.IPSecPhaseConfig{
 							Auth:       []string{"3des"},
 							Encryption: []string{"sha256"},
 							Dh:         []int32{14},
@@ -61,12 +61,12 @@ func TestAccIpsecSingle_basic(t *testing.T) {
 						DpdTimeout:           "50s",
 						Passphrase:           "tnEgVbTJE23123",
 						RemotePublicIP:       "198.51.100.42",
-						Phase1: perimeter81Sdk.IpSecPhase{
+						Phase1: perimeter81Sdk.IPSecPhaseConfig{
 							Auth:       []string{"blowfish256"},
 							Encryption: []string{"md5"},
 							Dh:         []int32{19},
 						},
-						Phase2: perimeter81Sdk.IpSecPhase{
+						Phase2: perimeter81Sdk.IPSecPhaseConfig{
 							Auth:       []string{"blowfish256"},
 							Encryption: []string{"md5"},
 							Dh:         []int32{19},
@@ -78,7 +78,7 @@ func TestAccIpsecSingle_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckIpsecSingleExists(n string, tunnel *perimeter81Sdk.IpSecSingleTunnel) resource.TestCheckFunc {
+func testAccCheckIpsecSingleExists(n string, tunnel *perimeter81Sdk.IPSecSingleTunnel) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -92,17 +92,17 @@ func testAccCheckIpsecSingleExists(n string, tunnel *perimeter81Sdk.IpSecSingleT
 		conn := testAccProvider.Meta().(*perimeter81Sdk.APIClient)
 		ctx := context.Background()
 		networkId := rs.Primary.Attributes["network_id"]
-		gotIpsecSingle, _, err := conn.IPSecSingleApi.GetIPSecSingleTunnel(ctx, networkId, tunnelId)
+		gotIpsecSingle, _, err := conn.IPSecSingleAPI.StandardGetIPSecSingleTunnel(ctx, networkId, tunnelId).Execute()
 		if err != nil {
 			return err
 		}
 
-		*tunnel = gotIpsecSingle
+		*tunnel = *gotIpsecSingle
 		return nil
 	}
 }
 
-func testAccCheckIpsecSingleAttributes(tunnel *perimeter81Sdk.IpSecSingleTunnel, want *testAccIpSecSingleExpectedAttributes) resource.TestCheckFunc {
+func testAccCheckIpsecSingleAttributes(tunnel *perimeter81Sdk.IPSecSingleTunnel, want *testAccIpSecSingleExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if !testComparableArraiesEq(tunnel.P81GatewaySubnets, want.P81GatewaySubnets) {
 			return fmt.Errorf("got p81 gateway subnets %q; want %q", tunnel.P81GatewaySubnets, want.P81GatewaySubnets)
@@ -123,11 +123,11 @@ func testAccCheckIpsecSingleAttributes(tunnel *perimeter81Sdk.IpSecSingleTunnel,
 		if tunnel.DpdTimeout != want.DpdTimeout {
 			return fmt.Errorf("got dpd timeout %q; want %q", tunnel.DpdTimeout, want.DpdTimeout)
 		}
-		if tunnel.Passphrase != want.Passphrase {
-			return fmt.Errorf("got passphrase %q; want %q", tunnel.Passphrase, want.Passphrase)
+		if tunnel.GetPassphrase() != want.Passphrase {
+			return fmt.Errorf("got passphrase %q; want %q", tunnel.GetPassphrase(), want.Passphrase)
 		}
-		if tunnel.RemotePublicIP != want.RemotePublicIP {
-			return fmt.Errorf("got remote public ip %q; want %q", tunnel.RemotePublicIP, want.RemotePublicIP)
+		if tunnel.GetRemotePublicIP() != want.RemotePublicIP {
+			return fmt.Errorf("got remote public ip %q; want %q", tunnel.GetRemotePublicIP(), want.RemotePublicIP)
 		}
 		if !testComparableArraiesEq(tunnel.Phase1.Auth, want.Phase1.Auth) {
 			return fmt.Errorf("got phase1 auth %q; want %q", tunnel.Phase1.Auth, want.Phase1.Auth)
@@ -162,8 +162,8 @@ type testAccIpSecSingleExpectedAttributes struct {
 	DpdTimeout           string
 	Passphrase           string
 	RemotePublicIP       string
-	Phase1               perimeter81Sdk.IpSecPhase
-	Phase2               perimeter81Sdk.IpSecPhase
+	Phase1               perimeter81Sdk.IPSecPhaseConfig
+	Phase2               perimeter81Sdk.IPSecPhaseConfig
 }
 
 func testAccIpsecSingleConfig() string {
@@ -185,7 +185,7 @@ data "perimeter81_networks" "all3" {
   	]
 }
 
-resource "perimeter81_ipsec_single" "ipss1" { 
+resource "perimeter81_ipsec_single" "ipss1" {
   network_id = perimeter81_network.n3.id
   region_id = {
     for network in data.perimeter81_networks.all3.networks :
@@ -241,7 +241,7 @@ data "perimeter81_networks" "all3" {
   	]
 }
 
-resource "perimeter81_ipsec_single" "ipss1" { 
+resource "perimeter81_ipsec_single" "ipss1" {
   network_id = perimeter81_network.n3.id
   region_id = {
     for network in data.perimeter81_networks.all3.networks :

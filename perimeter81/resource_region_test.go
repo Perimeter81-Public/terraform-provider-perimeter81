@@ -48,7 +48,7 @@ func TestAccRegion_basic(t *testing.T) {
 func testAccCheckRegionsCount(network *perimeter81Sdk.Network, want int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if len(network.Regions) != want {
-			return fmt.Errorf("got region count %q; want %q", len(network.Regions), want)
+			return fmt.Errorf("got region count %d; want %d", len(network.Regions), want)
 		}
 
 		return nil

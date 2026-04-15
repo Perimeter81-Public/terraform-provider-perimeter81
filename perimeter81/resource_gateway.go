@@ -92,7 +92,7 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 	}
 
 	// call the api and check if there is an error
-	networkData, _, err := client.NetworksApi.NetworksControllerV2NetworkFind(ctx, ids[0])
+	networkData, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, ids[0]).Execute()
 	if err != nil {
 		diagnostics = appendErrorDiags(diagnostics, "Unable to find Network", err)
 	}
@@ -102,14 +102,14 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 	if len(gateways) == 0 {
 		return nil, fmt.Errorf("could not import gateways please make sure that the netwrok_id and the region_id are correct\n")
 	}
-	newGateways := make([]perimeter81Sdk.Gateway, 0)
+	newGateways := make([]GatewayConfig, 0)
 	for _, gateway := range gateways {
-		newGateways = append(newGateways, perimeter81Sdk.Gateway{
+		newGateways = append(newGateways, GatewayConfig{
 			Idle: false,
 			Id:   gateway.Id,
 			Name: "$" + gateway.Id + "$",
-			Dns: gateway.Dns,
-			Ip: gateway.Ip,
+			Dns:  gateway.Dns,
+			Ip:   gateway.Ip,
 		})
 	}
 	// set the gateway and ids after getting the gateway id to the resource data

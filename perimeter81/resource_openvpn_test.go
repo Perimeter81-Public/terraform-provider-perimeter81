@@ -15,7 +15,7 @@ var randNameOpenVpn string = randStringBytesRmndr()
 
 func TestAccOpenvpn_basic(t *testing.T) {
 	t.Parallel()
-	var tunnel perimeter81Sdk.OpenVpnTunnel
+	var tunnel perimeter81Sdk.OpenVPNTunnel
 	var access_key string
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -38,7 +38,7 @@ func TestAccOpenvpn_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckOpenvpnExists(n string, tunnel *perimeter81Sdk.OpenVpnTunnel, access_key *string) resource.TestCheckFunc {
+func testAccCheckOpenvpnExists(n string, tunnel *perimeter81Sdk.OpenVPNTunnel, access_key *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -53,21 +53,21 @@ func testAccCheckOpenvpnExists(n string, tunnel *perimeter81Sdk.OpenVpnTunnel, a
 		ctx := context.Background()
 		networkId := rs.Primary.Attributes["network_id"]
 		version := rs.Primary.Attributes["version"]
-		gotOpenvpn, _, err := conn.OpenVPNApi.GetOpenVPNTunnel(ctx, networkId, tunnelId)
+		gotOpenvpn, _, err := conn.OpenVPNAPI.StandardGetOpenVPNTunnel(ctx, networkId, tunnelId).Execute()
 		if err != nil {
 			return err
 		}
 		if version == "1" {
-			*access_key = gotOpenvpn.SecretAccessKey
+			*access_key = gotOpenvpn.GetSecretAccessKey()
 		}
-		*tunnel = gotOpenvpn
+		*tunnel = *gotOpenvpn
 		return nil
 	}
 }
 
-func testAccCheckOpenvpnAttributes(tunnel *perimeter81Sdk.OpenVpnTunnel, access_key string) resource.TestCheckFunc {
+func testAccCheckOpenvpnAttributes(tunnel *perimeter81Sdk.OpenVPNTunnel, access_key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if tunnel.SecretAccessKey == access_key {
+		if tunnel.GetSecretAccessKey() == access_key {
 			return fmt.Errorf("Access key was %q; and didn't change", access_key)
 		}
 
@@ -94,7 +94,7 @@ data "perimeter81_networks" "all2" {
   	]
 }
 
-resource "perimeter81_openvpn" "ovpn2" { 
+resource "perimeter81_openvpn" "ovpn2" {
   network_id = perimeter81_network.n2.id
   region_id = {
     for network in data.perimeter81_networks.all2.networks :
@@ -132,7 +132,7 @@ data "perimeter81_networks" "all2" {
   	]
 }
 
-resource "perimeter81_openvpn" "ovpn2" { 
+resource "perimeter81_openvpn" "ovpn2" {
   network_id = perimeter81_network.n2.id
   region_id = {
     for network in data.perimeter81_networks.all2.networks :
