@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -19,6 +20,13 @@ Note: there is no update or delete endpoint — all fields are ForceNew.
 */
 func resourceApplication() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages an Application in Check Point SASE. " +
+			"**All attributes are immutable**: any change to a field on this resource " +
+			"forces full replacement (destroy + re-create), not in-place update. " +
+			"**`terraform destroy` only removes the resource from state.** " +
+			"The Harmony SASE v2.3 API does not expose a delete endpoint for " +
+			"applications, so the application continues to exist on the server. " +
+			"Delete it manually via the Infinity Portal if needed.",
 		CreateContext: resourceApplicationCreate,
 		ReadContext:   resourceApplicationRead,
 		DeleteContext: resourceApplicationDelete,
@@ -30,10 +38,14 @@ func resourceApplication() *schema.Resource {
 				Description: "The application name.",
 			},
 			"type": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The application type. Supported values: 'http', 'https', 'rdp'.",
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				Description: "The application type. The v2.3 API supports creating " +
+					"applications of these types only: `http`, `https`, `rdp`. " +
+					"(Existing `ssh` and `vnc` applications can be read but not " +
+					"created through the Public API.)",
+				ValidateFunc: validation.StringInSlice([]string{"http", "https", "rdp"}, false),
 			},
 			"network": {
 				Type:        schema.TypeString,
@@ -48,10 +60,11 @@ func resourceApplication() *schema.Resource {
 				Description: "The application host address.",
 			},
 			"port": {
-				Type:        schema.TypeInt,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The application port number.",
+				Type:         schema.TypeInt,
+				Required:     true,
+				ForceNew:     true,
+				Description:  "The application port number (1–65535).",
+				ValidateFunc: validation.IsPortNumber,
 			},
 			"users": {
 				Type:        schema.TypeList,
@@ -100,7 +113,7 @@ buildApplicationHostNullable builds a NullableOneOfFixedHostIdpHost from a host 
 func buildApplicationHostNullable(host string) perimeter81Sdk.NullableOneOfFixedHostIdpHost {
 	hostValue := perimeter81Sdk.StringAsFixedHostValue(&host)
 	fixedHost := perimeter81Sdk.FixedHost{
-		Source: "custom",
+		Source: "fixed",
 		Value:  hostValue,
 	}
 	var hostInterface interface{} = fixedHost
@@ -112,7 +125,7 @@ buildApplicationPortNullable builds a NullableOneOfFixedPortIdpPort from a port 
 */
 func buildApplicationPortNullable(port int32) perimeter81Sdk.NullableOneOfFixedPortIdpPort {
 	fixedPort := perimeter81Sdk.FixedPort{
-		Source: "custom",
+		Source: "fixed",
 		Value:  port,
 	}
 	var portInterface interface{} = fixedPort
