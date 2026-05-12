@@ -2,10 +2,8 @@ module terraform-provider-perimeter81
 
 go 1.26.2
 
-replace github.com/Perimeter81-Public/perimeter-81-client-sdk => ../perimeter-81-client-sdk
-
 require (
-	github.com/Perimeter81-Public/perimeter-81-client-sdk v1.19.0
+	github.com/Perimeter81-Public/perimeter-81-client-sdk/v2 v2.3.0
 	github.com/hashicorp/terraform-plugin-docs v0.15.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
 )

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk"
+	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
