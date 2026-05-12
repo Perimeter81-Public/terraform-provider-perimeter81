@@ -18,7 +18,7 @@ func TestAccDataSourceNetworks_basic(t *testing.T) {
 			{
 				Config: testAccNetworksConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworksExists("data.sase_networks.all"),
+					testAccCheckNetworksExists("data.checkpointsase_networks.all"),
 				),
 			},
 		},
@@ -37,6 +37,6 @@ func testAccCheckNetworksExists(n string) resource.TestCheckFunc {
 
 func testAccNetworksConfig() string {
 	return `
-	data "sase_networks" "all" {}
+	data "checkpointsase_networks" "all" {}
   `
 }

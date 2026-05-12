@@ -6,8 +6,8 @@ import (
 
 	"terraform-provider-perimeter81/perimeter81"
 )
-// Generate the Check Point Check Point SASE Terraform provider documentation using `tfplugindocs`:
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+// Generate the Check Point SASE Terraform provider documentation using `tfplugindocs`:
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name checkpointsase
 
 func main() {
 	plugin.Serve(&plugin.ServeOpts{

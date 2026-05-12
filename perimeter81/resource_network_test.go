@@ -25,7 +25,7 @@ func TestAccNetwork_basic(t *testing.T) {
 			{
 				Config: testAccNetworkConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkExists("sase_network.n", &network),
+					testAccCheckNetworkExists("checkpointsase_network.n", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
 						Name: randNameNetwork,
 						Tags: []string{"test"},
@@ -35,7 +35,7 @@ func TestAccNetwork_basic(t *testing.T) {
 			{
 				Config: testAccNetworkUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNetworkExists("sase_network.n", &network),
+					testAccCheckNetworkExists("checkpointsase_network.n", &network),
 					testAccCheckNetworkAttributes(&network, &testAccNetworkExpectedAttributes{
 						Name: randNameNetworkUpdated,
 						Tags: []string{"test", "updated"},
@@ -89,7 +89,7 @@ func testAccCheckNetworkAttributes(network *perimeter81Sdk.Network, want *testAc
 
 func testAccNetworkConfig() string {
 	config := `
-resource "sase_network" "n" {
+resource "checkpointsase_network" "n" {
 	network {
 		name = "%s"
 		tags = ["test"]
@@ -105,7 +105,7 @@ resource "sase_network" "n" {
 
 func testAccNetworkUpdateConfig() string {
 	config := `
-resource "sase_network" "n" {
+resource "checkpointsase_network" "n" {
 	network {
 		name = "%s"
 		tags = ["test", "updated"]

@@ -21,7 +21,7 @@ func TestAccIpsecRedundant_basic(t *testing.T) {
 			{
 				Config: testAccIpsecRedundantConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckIpsecRedundantExists("sase_ipsec_redundant.ipsr1", &tunnel),
+					testAccCheckIpsecRedundantExists("checkpointsase_ipsec_redundant.ipsr1", &tunnel),
 					testAccCheckIpsecRedundantAttributes(&tunnel, &perimeter81Sdk.IPSecRedundantTunnels{
 						SharedSettings: &perimeter81Sdk.IPSecSharedSettings{
 							P81GatewaySubnets:    []string{"0.0.0.0/0"},
@@ -142,7 +142,7 @@ func testAccCheckIpsecRedundantAttributes(tunnel *perimeter81Sdk.IPSecRedundantT
 func testAccIpsecRedundantConfig() string {
 	config := `
 
-resource "sase_network" "n4" {
+resource "checkpointsase_network" "n4" {
   network {
     name = "%s"
     tags = ["test"]
@@ -152,28 +152,28 @@ resource "sase_network" "n4" {
     idle = true
   }
 }
-resource "sase_gateway"  "g2"{
+resource "checkpointsase_gateway"  "g2"{
 
-  network_id = sase_network.n4.id
-  region_id = sase_network.n4.region[0].region_id
+  network_id = checkpointsase_network.n4.id
+  region_id = checkpointsase_network.n4.region[0].region_id
    gateways {
       name = "perimeter81"
       idle = true
   }
   	depends_on = [
-    	sase_network.n4
+    	checkpointsase_network.n4
   	]
 }
 
-data "sase_networks" "all4" {
+data "checkpointsase_networks" "all4" {
 	depends_on = [
-    	sase_network.n4,
-		sase_gateway.g2
+    	checkpointsase_network.n4,
+		checkpointsase_gateway.g2
   	]
 }
-resource "sase_ipsec_redundant" "ipsr1" {
-  region_id = sase_network.n4.region[0].region_id
-  network_id = sase_network.n4.id
+resource "checkpointsase_ipsec_redundant" "ipsr1" {
+  region_id = checkpointsase_network.n4.region[0].region_id
+  network_id = checkpointsase_network.n4.id
   tunnel_name = "ipseed"
   tunnel1 {
       passphrase = "aXvgHEYt"
@@ -182,10 +182,10 @@ resource "sase_ipsec_redundant" "ipsr1" {
       remote_public_ip = "169.254.100.7"
       remote_asn = "65323"
       gateway_id = {
-		for network in data.sase_networks.all4.networks :
+		for network in data.checkpointsase_networks.all4.networks :
 		network.id => network.regions[0].instances[0].id
-		if network.id == sase_network.n4.id
-	  }[sase_network.n4.id]
+		if network.id == checkpointsase_network.n4.id
+	  }[checkpointsase_network.n4.id]
   }
   tunnel2 {
       passphrase = "Sg4gKHtT"
@@ -194,10 +194,10 @@ resource "sase_ipsec_redundant" "ipsr1" {
       remote_public_ip = "169.254.100.16"
       remote_asn = "65324"
       gateway_id = {
-		for network in data.sase_networks.all4.networks :
+		for network in data.checkpointsase_networks.all4.networks :
 		network.id => network.regions[0].instances[1].id
-		if network.id == sase_network.n4.id
-	  }[sase_network.n4.id]
+		if network.id == checkpointsase_network.n4.id
+	  }[checkpointsase_network.n4.id]
   }
   shared_settings {
     p81_gateway_subnets = ["0.0.0.0/0"]

@@ -18,7 +18,7 @@ func TestAccDataSourceObjectAddresses_basic(t *testing.T) {
 			{
 				Config: testAccObjectAddressesConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectAddressesExists("data.sase_object_addresses.all"),
+					testAccCheckObjectAddressesExists("data.checkpointsase_object_addresses.all"),
 				),
 			},
 		},
@@ -37,6 +37,6 @@ func testAccCheckObjectAddressesExists(n string) resource.TestCheckFunc {
 
 func testAccObjectAddressesConfig() string {
 	return `
-	data "sase_object_addresses" "all" {}
+	data "checkpointsase_object_addresses" "all" {}
   `
 }

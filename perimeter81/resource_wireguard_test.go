@@ -24,7 +24,7 @@ func TestAccWireguard_basic(t *testing.T) {
 			{
 				Config: testAccWireguardConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWireguardExists("sase_wireguard.wgd1", &tunnel),
+					testAccCheckWireguardExists("checkpointsase_wireguard.wgd1", &tunnel),
 					testAccCheckWireguardAttributes(&tunnel, &testAccWireguardExpectedAttributes{
 						RemoteEndpoint: "192.177.100.42",
 						RemoteSubnets:  []string{"192.177.255.255/32"},
@@ -34,7 +34,7 @@ func TestAccWireguard_basic(t *testing.T) {
 			{
 				Config: testAccWireguardUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWireguardExists("sase_wireguard.wgd1", &tunnel),
+					testAccCheckWireguardExists("checkpointsase_wireguard.wgd1", &tunnel),
 					testAccCheckWireguardAttributes(&tunnel, &testAccWireguardExpectedAttributes{
 						RemoteEndpoint: "192.178.100.42",
 						RemoteSubnets:  []string{"192.178.255.255/32"},
@@ -89,7 +89,7 @@ func testAccCheckWireguardAttributes(tunnel *perimeter81Sdk.WireguardTunnel, wan
 
 func testAccWireguardConfig() string {
 	config := `
-resource "sase_network" "n1" {
+resource "checkpointsase_network" "n1" {
   network {
     name = "%s"
     tags = ["test"]
@@ -100,25 +100,25 @@ resource "sase_network" "n1" {
   }
 }
 
-data "sase_networks" "all" {
+data "checkpointsase_networks" "all" {
 	depends_on = [
-    	sase_network.n1
+    	checkpointsase_network.n1
   	]
 }
 
-resource "sase_wireguard" "wgd1" { 
-  network_id = sase_network.n1.id
+resource "checkpointsase_wireguard" "wgd1" { 
+  network_id = checkpointsase_network.n1.id
   remote_endpoint = "192.177.100.42"
   region_id = {
-    for network in data.sase_networks.all.networks :
+    for network in data.checkpointsase_networks.all.networks :
     network.id => network.regions[0].id
-    if network.id == sase_network.n1.id
-  }[sase_network.n1.id]
+    if network.id == checkpointsase_network.n1.id
+  }[checkpointsase_network.n1.id]
   gateway_id = {
-    for network in data.sase_networks.all.networks :
+    for network in data.checkpointsase_networks.all.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == sase_network.n1.id
-  }[sase_network.n1.id]
+    if network.id == checkpointsase_network.n1.id
+  }[checkpointsase_network.n1.id]
   tunnel_name = "Wireguard1"
   remote_subnets = ["192.177.255.255/32"]
 }
@@ -128,7 +128,7 @@ resource "sase_wireguard" "wgd1" {
 
 func testAccWireguardUpdateConfig() string {
 	config := `
-resource "sase_network" "n1" {
+resource "checkpointsase_network" "n1" {
   network {
     name = "%s"
     tags = ["test"]
@@ -139,25 +139,25 @@ resource "sase_network" "n1" {
   }
 }
 
-data "sase_networks" "all1" {
+data "checkpointsase_networks" "all1" {
 	depends_on = [
-    	sase_network.n1
+    	checkpointsase_network.n1
   	]
 }
 
-resource "sase_wireguard" "wgd1" { 
-  network_id = sase_network.n1.id
+resource "checkpointsase_wireguard" "wgd1" { 
+  network_id = checkpointsase_network.n1.id
   remote_endpoint = "192.178.100.42"
   region_id = {
-    for network in data.sase_networks.all1.networks :
+    for network in data.checkpointsase_networks.all1.networks :
     network.id => network.regions[0].id
-    if network.id == sase_network.n1.id
-  }[sase_network.n1.id]
+    if network.id == checkpointsase_network.n1.id
+  }[checkpointsase_network.n1.id]
   gateway_id = {
-    for network in data.sase_networks.all1.networks :
+    for network in data.checkpointsase_networks.all1.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == sase_network.n1.id
-  }[sase_network.n1.id]
+    if network.id == checkpointsase_network.n1.id
+  }[checkpointsase_network.n1.id]
   tunnel_name = "Wireguard1"
   remote_subnets = ["192.178.255.255/32"]
 }

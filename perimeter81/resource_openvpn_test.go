@@ -24,13 +24,13 @@ func TestAccOpenvpn_basic(t *testing.T) {
 			{
 				Config: testAccOpenvpnConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOpenvpnExists("sase_openvpn.ovpn2", &tunnel, &access_key),
+					testAccCheckOpenvpnExists("checkpointsase_openvpn.ovpn2", &tunnel, &access_key),
 				),
 			},
 			{
 				Config: testAccOpenvpnUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckOpenvpnExists("sase_openvpn.ovpn2", &tunnel, &access_key),
+					testAccCheckOpenvpnExists("checkpointsase_openvpn.ovpn2", &tunnel, &access_key),
 					testAccCheckOpenvpnAttributes(&tunnel, access_key),
 				),
 			},
@@ -77,7 +77,7 @@ func testAccCheckOpenvpnAttributes(tunnel *perimeter81Sdk.OpenVPNTunnel, access_
 
 func testAccOpenvpnConfig() string {
 	config := `
-resource "sase_network" "n2" {
+resource "checkpointsase_network" "n2" {
   network {
     name = "%s"
     tags = ["test"]
@@ -88,24 +88,24 @@ resource "sase_network" "n2" {
   }
 }
 
-data "sase_networks" "all2" {
+data "checkpointsase_networks" "all2" {
 	depends_on = [
-    	sase_network.n2
+    	checkpointsase_network.n2
   	]
 }
 
-resource "sase_openvpn" "ovpn2" {
-  network_id = sase_network.n2.id
+resource "checkpointsase_openvpn" "ovpn2" {
+  network_id = checkpointsase_network.n2.id
   region_id = {
-    for network in data.sase_networks.all2.networks :
+    for network in data.checkpointsase_networks.all2.networks :
     network.id => network.regions[0].id
-    if network.id == sase_network.n2.id
-  }[sase_network.n2.id]
+    if network.id == checkpointsase_network.n2.id
+  }[checkpointsase_network.n2.id]
   gateway_id = {
-    for network in data.sase_networks.all2.networks :
+    for network in data.checkpointsase_networks.all2.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == sase_network.n2.id
-  }[sase_network.n2.id]
+    if network.id == checkpointsase_network.n2.id
+  }[checkpointsase_network.n2.id]
   tunnel_name = "OpenVPNTunnel"
   version = 1
 }
@@ -115,7 +115,7 @@ resource "sase_openvpn" "ovpn2" {
 
 func testAccOpenvpnUpdateConfig() string {
 	config := `
-resource "sase_network" "n2" {
+resource "checkpointsase_network" "n2" {
   network {
     name = "%s"
     tags = ["test"]
@@ -126,24 +126,24 @@ resource "sase_network" "n2" {
   }
 }
 
-data "sase_networks" "all2" {
+data "checkpointsase_networks" "all2" {
 	depends_on = [
-    	sase_network.n2
+    	checkpointsase_network.n2
   	]
 }
 
-resource "sase_openvpn" "ovpn2" {
-  network_id = sase_network.n2.id
+resource "checkpointsase_openvpn" "ovpn2" {
+  network_id = checkpointsase_network.n2.id
   region_id = {
-    for network in data.sase_networks.all2.networks :
+    for network in data.checkpointsase_networks.all2.networks :
     network.id => network.regions[0].id
-    if network.id == sase_network.n2.id
-  }[sase_network.n2.id]
+    if network.id == checkpointsase_network.n2.id
+  }[checkpointsase_network.n2.id]
   gateway_id = {
-    for network in data.sase_networks.all2.networks :
+    for network in data.checkpointsase_networks.all2.networks :
     network.id => network.regions[0].instances[0].id
-    if network.id == sase_network.n2.id
-  }[sase_network.n2.id]
+    if network.id == checkpointsase_network.n2.id
+  }[checkpointsase_network.n2.id]
   tunnel_name = "OpenVPNTunnel"
   version = 2
 }

@@ -22,7 +22,7 @@ func TestAccObjectServices_basic(t *testing.T) {
 			{
 				Config: testAccObjectServicesConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectServicesExists("sase_object_services.os", &objectServices),
+					testAccCheckObjectServicesExists("checkpointsase_object_services.os", &objectServices),
 					testAccCheckObjectServicesAttributes(&objectServices, &testAccObjectServicesExpectedAttributes{
 						Name:        "test-os",
 						Description: "10.30.0.90/16",
@@ -34,7 +34,7 @@ func TestAccObjectServices_basic(t *testing.T) {
 			{
 				Config: testAccObjectServicesUpdateConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckObjectServicesExists("sase_object_services.os", &objectServices),
+					testAccCheckObjectServicesExists("checkpointsase_object_services.os", &objectServices),
 					testAccCheckObjectServicesAttributes(&objectServices, &testAccObjectServicesExpectedAttributes{
 						Name:        "test-os-updated",
 						Description: "10.30.0.91/16",
@@ -128,7 +128,7 @@ func testAccCheckObjectServicesAttributes(objectServices *perimeter81Sdk.Objects
 
 func testAccObjectServicesConfig() string {
 	config := `
-resource "sase_object_services" "os" {
+resource "checkpointsase_object_services" "os" {
   name = "test-os"
   description = "10.30.0.90/16"
 
@@ -144,7 +144,7 @@ resource "sase_object_services" "os" {
 
 func testAccObjectServicesUpdateConfig() string {
 	config := `
-resource "sase_object_services" "os" {
+resource "checkpointsase_object_services" "os" {
   name = "test-os-updated"
   description = "10.30.0.91/16"
 
