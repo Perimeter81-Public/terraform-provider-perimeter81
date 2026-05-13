@@ -18,6 +18,14 @@ resourceEnhancedRegion Setup the Enhanced Region Resource CRUD operations
 */
 func resourceEnhancedRegion() *schema.Resource {
 	return &schema.Resource{
+		Description: "Adds a region to an existing `checkpointsase_enhanced_network`. " +
+			"Use this resource for the second and subsequent regions of an enhanced network; " +
+			"the first region is declared inline on the `checkpointsase_enhanced_network` " +
+			"itself. Available region IDs are exposed by the `checkpointsase_enhanced_regions` " +
+			"data source. " +
+			"**`network_id`, `harmony_sase_region_id`, and `idle` are immutable** — " +
+			"changing any of them forces resource replacement. `scale_units` is the only " +
+			"in-place mutable attribute.",
 		CreateContext: resourceEnhancedRegionCreate,
 		ReadContext:   resourceEnhancedRegionRead,
 		UpdateContext: resourceEnhancedRegionUpdate,
@@ -150,6 +158,13 @@ func resourceEnhancedRegionRead(ctx context.Context, d *schema.ResourceData, m i
 	if err := d.Set("scale_units", regionData.ScaleUnits); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Enhanced Region scale_units", err)
+	}
+
+	if rm := regionData.Attributes.RunningMode; rm != nil {
+		if err := d.Set("idle", rm.Idle); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set Enhanced Region idle", err)
+		}
 	}
 
 	return diags

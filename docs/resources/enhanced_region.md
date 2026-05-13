@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_region Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Adds a region to an existing checkpointsase_enhanced_network. Use this resource for the second and subsequent regions of an enhanced network; the first region is declared inline on the checkpointsase_enhanced_network itself. Available region IDs are exposed by the checkpointsase_enhanced_regions data source. network_id, harmony_sase_region_id, and idle are immutable — changing any of them forces resource replacement. scale_units is the only in-place mutable attribute.
 ---
 
 # checkpointsase_enhanced_region (Resource)
 
-
+Adds a region to an existing `checkpointsase_enhanced_network`. Use this resource for the second and subsequent regions of an enhanced network; the first region is declared inline on the `checkpointsase_enhanced_network` itself. Available region IDs are exposed by the `checkpointsase_enhanced_regions` data source. **`network_id`, `harmony_sase_region_id`, and `idle` are immutable** — changing any of them forces resource replacement. `scale_units` is the only in-place mutable attribute.
 
 ## Example Usage
 
