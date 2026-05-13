@@ -3,12 +3,12 @@
 page_title: "checkpointsase_gateway Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages the gateway pool of a single region within a checkpointsase_network. Each gateways block declares one gateway (named, with an idle flag). The resource is keyed by the composite <network_id>-<region_id> for import. network_id and region_id are immutable — changing either would orphan the managed gateway list from its region and is not supported.
 ---
 
 # checkpointsase_gateway (Resource)
 
-
+Manages the gateway pool of a single region within a `checkpointsase_network`. Each `gateways` block declares one gateway (named, with an `idle` flag). The resource is keyed by the composite `<network_id>-<region_id>` for import. **`network_id` and `region_id` are immutable** — changing either would orphan the managed gateway list from its region and is not supported.
 
 ## Example Usage
 
@@ -31,13 +31,13 @@ resource "checkpointsase_gateway" "example" {
 
 ### Required
 
-- `network_id` (String)
-- `region_id` (String)
+- `network_id` (String) The ID of the standard network whose gateways this resource manages.
+- `region_id` (String) The ID of the network's region within which to manage the gateway pool. This is the network-region ID returned by `checkpointsase_network.region.region_id`, not the cloud region ID (`cpregion_id`).
 
 ### Optional
 
-- `gateways` (Block List) (see [below for nested schema](#nestedblock--gateways))
-- `last_updated` (String)
+- `gateways` (Block List) List of gateways to provision in the region. Order is not significant. (see [below for nested schema](#nestedblock--gateways))
+- `last_updated` (String) Timestamp of the last update to this resource.
 
 ### Read-Only
 
@@ -48,14 +48,14 @@ resource "checkpointsase_gateway" "example" {
 
 Required:
 
-- `idle` (Boolean)
-- `name` (String)
+- `idle` (Boolean) Whether the gateway is idle (disabled for user traffic). Set to `false` to make the gateway active.
+- `name` (String) The gateway name. Must be unique within the region.
 
 Read-Only:
 
-- `dns` (String)
-- `id` (String) The ID of this resource.
-- `ip` (String)
+- `dns` (String) The DNS hostname assigned to the gateway.
+- `id` (String) The unique ID assigned to the gateway by the server.
+- `ip` (String) The public IP address assigned to the gateway.
 
 ## Import
 

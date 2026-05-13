@@ -3,7 +3,6 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,48 +19,66 @@ resourceGateway Setup the gateway Resource CRUD operations
 */
 func resourceGateway() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages the gateway pool of a single region within a `checkpointsase_network`. " +
+			"Each `gateways` block declares one gateway (named, with an `idle` flag). " +
+			"The resource is keyed by the composite `<network_id>-<region_id>` for import. " +
+			"**`network_id` and `region_id` are immutable** — changing either would orphan the " +
+			"managed gateway list from its region and is not supported.",
 		CreateContext: resourceGatewayCreate,
 		ReadContext:   resourceGatewayRead,
 		UpdateContext: resourceGatewayUpdate,
 		DeleteContext: resourceGatewayDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+				Description: "The ID of the network's region within which to manage the gateway pool. " +
+					"This is the network-region ID returned by `checkpointsase_network.region.region_id`, " +
+					"not the cloud region ID (`cpregion_id`).",
 			},
 			"network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the standard network whose gateways this resource manages.",
 			},
 			"gateways": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "List of gateways to provision in the region. Order is not significant.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The gateway name. Must be unique within the region.",
 						},
 						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The unique ID assigned to the gateway by the server.",
 						},
 						"dns": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The DNS hostname assigned to the gateway.",
 						},
 						"ip": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The public IP address assigned to the gateway.",
 						},
 						"idle": {
-							Type:     schema.TypeBool,
-							Required: true,
+							Type:        schema.TypeBool,
+							Required:    true,
+							Description: "Whether the gateway is idle (disabled for user traffic). Set to `false` to make the gateway active.",
 						},
 					},
 				},
@@ -122,7 +139,7 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 	if err := d.Set("region_id", ids[1]); err != nil {
 		return nil, fmt.Errorf("Unable to set region_id after import\n")
 	}
-	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
+	d.SetId(ids[0] + "-" + ids[1])
 	if diagnostics.HasError() {
 		for _, diagnostic := range diagnostics {
 			if diagnostic.Severity == diag.Error {
@@ -170,7 +187,7 @@ func resourceGatewayCreate(ctx context.Context, d *schema.ResourceData, m interf
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Gateway data", err)
 	}
-	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
+	d.SetId(network_id + "-" + region_id)
 	return diags
 }
 
@@ -183,8 +200,64 @@ resourceGatewayRead Read a gateway
 @return diag.Diagnostics
 */
 func resourceGatewayRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// no read operation for gateways
-	return nil
+	var diags diag.Diagnostics
+	client := m.(*perimeter81Sdk.APIClient)
+	ctx = context.Background()
+
+	networkId := d.Get("network_id").(string)
+	regionId := d.Get("region_id").(string)
+
+	networkData, _, err := client.StandardNetworksAPI.StandardNetworksControllerV2NetworkFind(ctx, networkId).Execute()
+	if err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to find Network for gateway read", err)
+	}
+
+	serverGateways := getGatewaysInArray(regionId, networkData)
+	if len(serverGateways) == 0 {
+		// Region/network no longer has gateways — drop from state.
+		d.SetId("")
+		return diags
+	}
+
+	// Map server response by ID for lookup.
+	serverByID := make(map[string]perimeter81Sdk.NetworkInstance, len(serverGateways))
+	for _, g := range serverGateways {
+		serverByID[g.Id] = g
+	}
+
+	// Reconcile with prior state. The API doesn't return `name` / `idle`,
+	// so preserve those from the user's HCL/state and refresh only the
+	// server-computed fields (id/dns/ip).
+	prior := flattenGatewaysData(d.Get("gateways").([]interface{}))
+	refreshed := make([]GatewayConfig, 0, len(prior))
+	for _, p := range prior {
+		if srv, ok := serverByID[p.Id]; ok {
+			refreshed = append(refreshed, GatewayConfig{
+				Id:   srv.Id,
+				Dns:  srv.Dns,
+				Ip:   srv.Ip,
+				Name: p.Name, // preserve — API doesn't carry it
+				Idle: p.Idle, // preserve — API doesn't carry it
+			})
+			delete(serverByID, p.Id)
+		}
+	}
+	// Surface gateways that exist server-side but not in state (added externally).
+	for _, srv := range serverByID {
+		refreshed = append(refreshed, GatewayConfig{
+			Id:   srv.Id,
+			Dns:  srv.Dns,
+			Ip:   srv.Ip,
+			Name: "$" + srv.Id + "$", // matches the import-handler placeholder
+			Idle: false,
+		})
+	}
+	if err := d.Set("gateways", flattenGateways(refreshed)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Gateway data", err)
+	}
+	return diags
 }
 
 /*
