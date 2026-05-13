@@ -3,12 +3,14 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -18,6 +20,14 @@ resourceEnhancedStaticTunnel Setup the Enhanced Static Tunnel Resource CRUD oper
 */
 func resourceEnhancedStaticTunnel() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a static IPsec tunnel attached to a region of a " +
+			"`checkpointsase_enhanced_network`. A static tunnel terminates at a single " +
+			"remote endpoint identified by `remote_public_ip` (PSK) or via certificate " +
+			"authentication (`auth_type = \"cert\"` + `customer_root_ca`). " +
+			"Use `checkpointsase_enhanced_route_table` with `type = \"static\"` and the " +
+			"tunnel's ID to attach routes. " +
+			"**`network_id` and `region_id` are immutable** — changing either forces " +
+			"resource replacement.",
 		CreateContext: resourceEnhancedStaticTunnelCreate,
 		ReadContext:   resourceEnhancedStaticTunnelRead,
 		UpdateContext: resourceEnhancedStaticTunnelUpdate,
@@ -57,9 +67,10 @@ func resourceEnhancedStaticTunnel() *schema.Resource {
 				Description: "The remote gateway ID.",
 			},
 			"auth_type": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Authentication type for the tunnel. Use 'psk' for pre-shared key or 'cert' for certificate.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "Authentication type. Must be `psk` (pre-shared key, requires `passphrase`) or `cert` (certificate, requires `customer_root_ca`).",
+				ValidateFunc: validation.StringInSlice([]string{"psk", "cert"}, false),
 			},
 			"passphrase": {
 				Type:        schema.TypeString,
@@ -78,35 +89,47 @@ func resourceEnhancedStaticTunnel() *schema.Resource {
 				Description: "Optional description for the static tunnel.",
 			},
 			"peak_bandwidth": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     1000,
-				Description: "Expected peak throughput of the tunnel communication in Mbps. Defaults to 1000.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1000,
+				Description:  "Expected peak throughput of the tunnel communication in Mbps. Allowed range is 10–8000. Defaults to 1000.",
+				ValidateFunc: validation.IntBetween(10, 8000),
 			},
 			"key_exchange": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IKE version for key exchange (e.g., 'ikev2').",
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "IKE version for key exchange. Must be `ikev1` or `ikev2`.",
+				ValidateFunc: validation.StringInSlice([]string{"ikev1", "ikev2"}, false),
 			},
 			"ike_life_time": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IKE lifetime value (e.g., '28800s', '480m', '8h').",
+				Type:     schema.TypeString,
+				Required: true,
+				Description: "IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `28800s`, `480m`, `8h`)"),
 			},
 			"lifetime": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IPSec SA lifetime value (e.g., '3600s', '60m', '1h').",
+				Type:     schema.TypeString,
+				Required: true,
+				Description: "IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `3600s`, `60m`, `1h`)"),
 			},
 			"dpd_delay": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Dead peer detection delay interval (e.g., '30s').",
+				Description: "Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"dpd_timeout": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Dead peer detection timeout value (e.g., '60s').",
+				Description: "Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"p81_gateway_subnets": {
 				Type:        schema.TypeList,
@@ -400,6 +423,19 @@ func resourceEnhancedStaticTunnelRead(ctx context.Context, d *schema.ResourceDat
 	if err := d.Set("phase2", flattenIPSecPhaseConfigV23ToMap(tunnelData.Phase2)); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Enhanced Static Tunnel phase2", err)
+	}
+
+	if tunnelData.Description != nil {
+		if err := d.Set("description", *tunnelData.Description); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set Enhanced Static Tunnel description", err)
+		}
+	}
+	if tunnelData.PeakBandwidth != nil {
+		if err := d.Set("peak_bandwidth", int(*tunnelData.PeakBandwidth)); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set Enhanced Static Tunnel peak_bandwidth", err)
+		}
 	}
 
 	return diags

@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_static_tunnel Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a static IPsec tunnel attached to a region of a checkpointsase_enhanced_network. A static tunnel terminates at a single remote endpoint identified by remote_public_ip (PSK) or via certificate authentication (auth_type = "cert" + customer_root_ca). Use checkpointsase_enhanced_route_table with type = "static" and the tunnel's ID to attach routes. network_id and region_id are immutable — changing either forces resource replacement.
 ---
 
 # checkpointsase_enhanced_static_tunnel (Resource)
 
-
+Manages a static IPsec tunnel attached to a region of a `checkpointsase_enhanced_network`. A static tunnel terminates at a single remote endpoint identified by `remote_public_ip` (PSK) or via certificate authentication (`auth_type = "cert"` + `customer_root_ca`). Use `checkpointsase_enhanced_route_table` with `type = "static"` and the tunnel's ID to attach routes. **`network_id` and `region_id` are immutable** — changing either forces resource replacement.
 
 ## Example Usage
 
@@ -31,7 +31,7 @@ resource "checkpointsase_enhanced_static_tunnel" "example" {
   ike_life_time = "28800s"
   lifetime      = "3600s"
   dpd_delay     = "30s"
-  dpd_timeout   = "120s"
+  dpd_timeout   = "60s"
 
   phase1 {
     auth                = ["sha256"]
@@ -52,11 +52,11 @@ resource "checkpointsase_enhanced_static_tunnel" "example" {
 
 ### Required
 
-- `dpd_delay` (String) Dead peer detection delay interval (e.g., '30s').
-- `dpd_timeout` (String) Dead peer detection timeout value (e.g., '60s').
-- `ike_life_time` (String) IKE lifetime value (e.g., '28800s', '480m', '8h').
-- `key_exchange` (String) IKE version for key exchange (e.g., 'ikev2').
-- `lifetime` (String) IPSec SA lifetime value (e.g., '3600s', '60m', '1h').
+- `dpd_delay` (String) Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `dpd_timeout` (String) Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `ike_life_time` (String) IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `key_exchange` (String) IKE version for key exchange. Must be `ikev1` or `ikev2`.
+- `lifetime` (String) IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
 - `network_id` (String) The ID of the enhanced network this static tunnel belongs to.
 - `p81_gateway_subnets` (List of String) List of Check Point SASE gateway subnet CIDR blocks.
 - `phase1` (Block List, Min: 1, Max: 1) Phase 1 (IKE) IPSec configuration. (see [below for nested schema](#nestedblock--phase1))
@@ -67,12 +67,12 @@ resource "checkpointsase_enhanced_static_tunnel" "example" {
 
 ### Optional
 
-- `auth_type` (String) Authentication type for the tunnel. Use 'psk' for pre-shared key or 'cert' for certificate.
+- `auth_type` (String) Authentication type. Must be `psk` (pre-shared key, requires `passphrase`) or `cert` (certificate, requires `customer_root_ca`).
 - `customer_root_ca` (String) Customer root certificate authority. Required when auth_type is 'cert'.
 - `description` (String) Optional description for the static tunnel.
 - `last_updated` (String) Timestamp of the last update to this resource.
 - `passphrase` (String, Sensitive) Pre-shared key for tunnel authentication (8-64 characters). Required when auth_type is 'psk'.
-- `peak_bandwidth` (Number) Expected peak throughput of the tunnel communication in Mbps. Defaults to 1000.
+- `peak_bandwidth` (Number) Expected peak throughput of the tunnel communication in Mbps. Allowed range is 10–8000. Defaults to 1000.
 - `remote_id` (String) The remote gateway ID.
 - `remote_public_ip` (String) The remote gateway public IP address.
 
