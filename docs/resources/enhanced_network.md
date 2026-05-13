@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_network Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages an enhanced (SD-WAN-capable) network in Check Point SASE. Enhanced networks support multi-region deployment, IPsec tunnels (static and BGP-routed dynamic), and route tables — see checkpointsase_enhanced_region, checkpointsase_enhanced_static_tunnel, checkpointsase_enhanced_dynamic_tunnel, and checkpointsase_enhanced_route_table. subnet is immutable — changing it forces resource replacement.
 ---
 
 # checkpointsase_enhanced_network (Resource)
 
-
+Manages an enhanced (SD-WAN-capable) network in Check Point SASE. Enhanced networks support multi-region deployment, IPsec tunnels (static and BGP-routed dynamic), and route tables — see `checkpointsase_enhanced_region`, `checkpointsase_enhanced_static_tunnel`, `checkpointsase_enhanced_dynamic_tunnel`, and `checkpointsase_enhanced_route_table`. **`subnet` is immutable** — changing it forces resource replacement.
 
 ## Example Usage
 
@@ -36,7 +36,7 @@ resource "checkpointsase_enhanced_network" "example" {
 
 - `name` (String) The name of the enhanced network.
 - `region` (Block List, Min: 1) The list of regions to deploy the enhanced network in. (see [below for nested schema](#nestedblock--region))
-- `subnet` (String) The subnet CIDR block for the enhanced network. Cannot be changed after creation. Allowed private subnet ranges are 10.0.0.0/12-22, 172.16.0.0/12-22, 192.168.0.0/16-22, or 198.18.0.0/15-22.
+- `subnet` (String) The subnet CIDR block for the enhanced network. Cannot be changed after creation. Allowed private ranges (server-enforced): `10.0.0.0/12-22`, `172.16.0.0/12-22`, `192.168.0.0/16-22`, `198.18.0.0/15-22`. The plan-time validator checks CIDR format only — out-of-range prefixes are rejected at apply time by the server.
 
 ### Optional
 
