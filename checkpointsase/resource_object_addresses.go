@@ -7,6 +7,7 @@ import (
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -16,35 +17,49 @@ resourceObjectAddresses Setup the Object Addresses Resource CRUD operations
 */
 func resourceObjectAddresses() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages an address object in Check Point SASE's shared object library. " +
+			"Address objects are reusable references to a single IP, a list of IPs, a CIDR " +
+			"block, or an FQDN; they're typically referenced from firewall policy rules " +
+			"and service definitions. Use `checkpointsase_object_services` for the parallel " +
+			"service-object resource.",
 		CreateContext: resourceObjectAddressesCreate,
 		ReadContext:   resourceObjectAddressesRead,
 		UpdateContext: resourceObjectAddressesUpdate,
 		DeleteContext: resourceObjectAddressesDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Display name of the address object. Must be 3–100 characters.",
+				ValidateFunc: validation.StringLenBetween(3, 100),
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Optional description of the address object.",
 			},
 			"value_type": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Category of the `value` list. Must be `ip` (single IP), `list` (multiple IPs), `cidr` (single CIDR block), or `fqdn` (single domain name).",
+				ValidateFunc: validation.StringInSlice([]string{"ip", "list", "cidr", "fqdn"}, false),
 			},
 			"ip_version": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Deprecated:  "Has no effect on the v2.3 server. The Public API hardcodes `ipv4` server-side and strips this field from both request and response. Will be removed in a future major release.",
+				Description: "IP version (e.g. `ipv4`). Not transmitted to or returned by the v2.3 server — values you set here are silently discarded.",
 			},
 			"value": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "Address values. Shape depends on `value_type`: exactly 1 element for `ip` / `cidr` / `fqdn`, 1+ elements for `list`.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},

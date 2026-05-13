@@ -3,12 +3,12 @@
 page_title: "checkpointsase_object_addresses Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages an address object in Check Point SASE's shared object library. Address objects are reusable references to a single IP, a list of IPs, a CIDR block, or an FQDN; they're typically referenced from firewall policy rules and service definitions. Use checkpointsase_object_services for the parallel service-object resource.
 ---
 
 # checkpointsase_object_addresses (Resource)
 
-
+Manages an address object in Check Point SASE's shared object library. Address objects are reusable references to a single IP, a list of IPs, a CIDR block, or an FQDN; they're typically referenced from firewall policy rules and service definitions. Use `checkpointsase_object_services` for the parallel service-object resource.
 
 ## Example Usage
 
@@ -26,15 +26,15 @@ resource "checkpointsase_object_addresses" "internal_api" {
 
 ### Required
 
-- `name` (String)
-- `value` (List of String)
-- `value_type` (String)
+- `name` (String) Display name of the address object. Must be 3–100 characters.
+- `value` (List of String) Address values. Shape depends on `value_type`: exactly 1 element for `ip` / `cidr` / `fqdn`, 1+ elements for `list`.
+- `value_type` (String) Category of the `value` list. Must be `ip` (single IP), `list` (multiple IPs), `cidr` (single CIDR block), or `fqdn` (single domain name).
 
 ### Optional
 
-- `description` (String)
-- `ip_version` (String)
-- `last_updated` (String)
+- `description` (String) Optional description of the address object.
+- `ip_version` (String, Deprecated) IP version (e.g. `ipv4`). Not transmitted to or returned by the v2.3 server — values you set here are silently discarded.
+- `last_updated` (String) Timestamp of the last update to this resource.
 
 ### Read-Only
 
