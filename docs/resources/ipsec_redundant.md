@@ -3,44 +3,66 @@
 page_title: "checkpointsase_ipsec_redundant Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages an active/standby IPsec redundant tunnel pair for a checkpointsase_network. Two tunnels (tunnel1 + tunnel2) terminate at distinct remote endpoints for failover; shared_settings (gateway subnets) and advanced_settings (IKE/IPSec parameters, phase1/phase2 proposals) apply to both tunnels uniformly. This resource has no in-place update path — every attribute change forces full replacement (destroy + recreate). Updating in place will be supported in a future version.
 ---
 
 # checkpointsase_ipsec_redundant (Resource)
 
-
+Manages an active/standby IPsec redundant tunnel pair for a `checkpointsase_network`. Two tunnels (`tunnel1` + `tunnel2`) terminate at distinct remote endpoints for failover; `shared_settings` (gateway subnets) and `advanced_settings` (IKE/IPSec parameters, phase1/phase2 proposals) apply to both tunnels uniformly. **This resource has no in-place update path** — every attribute change forces full replacement (destroy + recreate). Updating in place will be supported in a future version.
 
 ## Example Usage
 
 ```terraform
-# A redundant (active/standby) IPsec tunnel pair for a standard network.
+# An active/standby IPsec redundant tunnel pair for a standard network.
+# Two tunnels (tunnel1 + tunnel2) terminate at distinct remote endpoints for
+# failover; shared and advanced settings apply to both. Timing fields use
+# duration-string syntax ("30s", "3600s", "8h"). `dh` values are integer
+# Diffie-Hellman group numbers (e.g. 14 = MODP2048).
 resource "checkpointsase_ipsec_redundant" "example" {
   network_id  = "ZwAeo5wqiF"
   region_id   = "K7tEfRm9vQ"
   tunnel_name = "ipsecRedundant01"
 
   shared_settings {
-    passphrase             = "ChangeMe-shared-secret"
+    p81_gateway_subnets    = ["10.99.0.0/24"]
     remote_gateway_subnets = ["192.168.30.0/24"]
+  }
+
+  tunnel1 {
+    gateway_id           = "abc12345DE"
+    passphrase           = "ChangeMe-tunnel1-secret"
+    p81_gwinternal_ip    = "169.254.0.1"
+    remote_gwinternal_ip = "169.254.0.2"
+    remote_public_ip     = "203.0.113.30"
+    remote_asn           = "65010"
+  }
+
+  tunnel2 {
+    gateway_id           = "abc12345DF"
+    passphrase           = "ChangeMe-tunnel2-secret"
+    p81_gwinternal_ip    = "169.254.1.1"
+    remote_gwinternal_ip = "169.254.1.2"
+    remote_public_ip     = "203.0.113.31"
+    remote_asn           = "65010"
   }
 
   advanced_settings {
     key_exchange  = "ikev2"
-    ike_life_time = 86400
-    lifetime      = 3600
-    dpd_delay     = 30
-    dpd_timeout   = 120
+    ike_life_time = "28800s"
+    lifetime      = "3600s"
+    dpd_delay     = "30s"
+    dpd_timeout   = "60s"
 
-    phase_one_proposals {
-      auth       = "sha256"
-      encryption = "aes-cbc-256"
-      dh         = "modp2048"
+    phase1 {
+      auth       = ["sha256"]
+      encryption = ["aes-cbc-256"]
+      dh         = [14]
     }
 
-    phase_two_proposals {
-      auth       = "sha256"
-      encryption = "aes-cbc-256"
-      dh         = "modp2048"
+    phase2 {
+      auth       = ["sha256"]
+      encryption = ["aes-cbc-256"]
+      dh         = [14]
     }
   }
 }
@@ -51,17 +73,17 @@ resource "checkpointsase_ipsec_redundant" "example" {
 
 ### Required
 
-- `advanced_settings` (Block List, Min: 1) (see [below for nested schema](#nestedblock--advanced_settings))
-- `network_id` (String)
-- `region_id` (String)
-- `shared_settings` (Block List, Min: 1) (see [below for nested schema](#nestedblock--shared_settings))
-- `tunnel1` (Block List, Min: 1) (see [below for nested schema](#nestedblock--tunnel1))
-- `tunnel2` (Block List, Min: 1) (see [below for nested schema](#nestedblock--tunnel2))
-- `tunnel_name` (String)
+- `advanced_settings` (Block List, Min: 1) IKE/IPSec parameters and phase1/phase2 proposals shared by both tunnels. (see [below for nested schema](#nestedblock--advanced_settings))
+- `network_id` (String) The ID of the standard network the tunnel pair belongs to.
+- `region_id` (String) The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.
+- `shared_settings` (Block List, Min: 1) Subnet routing settings shared by both tunnels. (see [below for nested schema](#nestedblock--shared_settings))
+- `tunnel1` (Block List, Min: 1) Primary tunnel endpoint configuration. (see [below for nested schema](#nestedblock--tunnel1))
+- `tunnel2` (Block List, Min: 1) Standby tunnel endpoint configuration. Same shape as `tunnel1`. (see [below for nested schema](#nestedblock--tunnel2))
+- `tunnel_name` (String) Display name for the redundant tunnel pair.
 
 ### Optional
 
-- `last_updated` (String)
+- `last_updated` (String) Timestamp of the last update to this resource.
 
 ### Read-Only
 
@@ -72,22 +94,22 @@ resource "checkpointsase_ipsec_redundant" "example" {
 
 Required:
 
-- `dpd_delay` (String)
-- `dpd_timeout` (String)
-- `ike_life_time` (String)
-- `key_exchange` (String)
-- `lifetime` (String)
-- `phase1` (Block List, Min: 1) (see [below for nested schema](#nestedblock--advanced_settings--phase1))
-- `phase2` (Block List, Min: 1) (see [below for nested schema](#nestedblock--advanced_settings--phase2))
+- `dpd_delay` (String) Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `dpd_timeout` (String) Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `ike_life_time` (String) IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `key_exchange` (String) IKE version for key exchange. Must be `ikev1` or `ikev2`.
+- `lifetime` (String) IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `phase1` (Block List, Min: 1) Phase 1 (IKE) IPSec proposal lists. (see [below for nested schema](#nestedblock--advanced_settings--phase1))
+- `phase2` (Block List, Min: 1) Phase 2 (ESP/IPSec) proposal lists. (see [below for nested schema](#nestedblock--advanced_settings--phase2))
 
 <a id="nestedblock--advanced_settings--phase1"></a>
 ### Nested Schema for `advanced_settings.phase1`
 
 Required:
 
-- `auth` (List of String)
-- `dh` (List of Number)
-- `encryption` (List of String)
+- `auth` (List of String) List of phase 1 authentication algorithms (e.g. `["sha256"]`).
+- `dh` (List of Number) List of phase 1 Diffie-Hellman group numbers (e.g. `[14]` for MODP2048).
+- `encryption` (List of String) List of phase 1 encryption algorithms (e.g. `["aes-cbc-256"]`).
 
 
 <a id="nestedblock--advanced_settings--phase2"></a>
@@ -95,9 +117,9 @@ Required:
 
 Required:
 
-- `auth` (List of String)
-- `dh` (List of Number)
-- `encryption` (List of String)
+- `auth` (List of String) List of phase 2 authentication algorithms.
+- `dh` (List of Number) List of phase 2 Diffie-Hellman group numbers.
+- `encryption` (List of String) List of phase 2 encryption algorithms.
 
 
 
@@ -106,8 +128,8 @@ Required:
 
 Required:
 
-- `p81_gateway_subnets` (List of String)
-- `remote_gateway_subnets` (List of String)
+- `p81_gateway_subnets` (List of String) Check Point SASE gateway subnet CIDR blocks reachable through either tunnel.
+- `remote_gateway_subnets` (List of String) Remote-side subnet CIDR blocks reachable through either tunnel.
 
 
 <a id="nestedblock--tunnel1"></a>
@@ -115,17 +137,17 @@ Required:
 
 Required:
 
-- `gateway_id` (String)
-- `p81_gwinternal_ip` (String)
-- `passphrase` (String, Sensitive)
-- `remote_asn` (String)
-- `remote_gwinternal_ip` (String)
-- `remote_public_ip` (String)
+- `gateway_id` (String) The ID of the SASE gateway that terminates this tunnel locally.
+- `p81_gwinternal_ip` (String) The Check Point SASE gateway internal IP on this tunnel.
+- `passphrase` (String, Sensitive) Pre-shared key for this tunnel (8–64 characters).
+- `remote_asn` (String) The remote peer's BGP ASN as a string (e.g. `"65010"`).
+- `remote_gwinternal_ip` (String) The remote gateway internal IP on this tunnel.
+- `remote_public_ip` (String) The remote gateway public IP on this tunnel.
 
 Optional:
 
-- `remote_id` (String)
-- `tunnel_id` (String)
+- `remote_id` (String) Optional remote tunnel ID. Computed if not supplied.
+- `tunnel_id` (String) The server-assigned tunnel ID. Computed.
 
 
 <a id="nestedblock--tunnel2"></a>
@@ -133,17 +155,17 @@ Optional:
 
 Required:
 
-- `gateway_id` (String)
-- `p81_gwinternal_ip` (String)
-- `passphrase` (String, Sensitive)
-- `remote_asn` (String)
-- `remote_gwinternal_ip` (String)
-- `remote_public_ip` (String)
+- `gateway_id` (String) The ID of the SASE gateway that terminates this tunnel locally.
+- `p81_gwinternal_ip` (String) The Check Point SASE gateway internal IP on this tunnel.
+- `passphrase` (String, Sensitive) Pre-shared key for this tunnel (8–64 characters).
+- `remote_asn` (String) The remote peer's BGP ASN as a string (e.g. `"65010"`).
+- `remote_gwinternal_ip` (String) The remote gateway internal IP on this tunnel.
+- `remote_public_ip` (String) The remote gateway public IP on this tunnel.
 
 Optional:
 
-- `remote_id` (String)
-- `tunnel_id` (String)
+- `remote_id` (String) Optional remote tunnel ID. Computed if not supplied.
+- `tunnel_id` (String) The server-assigned tunnel ID. Computed.
 
 ## Import
 

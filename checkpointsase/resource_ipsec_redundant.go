@@ -3,6 +3,7 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -19,75 +21,112 @@ resourceIpsecRedundant Setup the IpSec-Redundant Resource CRUD operations
 */
 func resourceIpsecRedundant() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages an active/standby IPsec redundant tunnel pair for a " +
+			"`checkpointsase_network`. Two tunnels (`tunnel1` + `tunnel2`) terminate at " +
+			"distinct remote endpoints for failover; `shared_settings` (gateway subnets) " +
+			"and `advanced_settings` (IKE/IPSec parameters, phase1/phase2 proposals) " +
+			"apply to both tunnels uniformly. " +
+			"**This resource has no in-place update path** — every attribute change " +
+			"forces full replacement (destroy + recreate). Updating in place will be " +
+			"supported in a future version.",
 		CreateContext: resourceIpsecRedundantCreate,
 		ReadContext:   resourceIpsecRedundantRead,
 		UpdateContext: resourceIpsecRedundantUpdate,
 		DeleteContext: resourceIpsecRedundantDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"region_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.",
 			},
 			"network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the standard network the tunnel pair belongs to.",
 			},
 			"tunnel_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Display name for the redundant tunnel pair.",
 			},
 			"advanced_settings": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				ForceNew:    true,
+				Description: "IKE/IPSec parameters and phase1/phase2 proposals shared by both tunnels.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"key_exchange": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "IKE version for key exchange. Must be `ikev1` or `ikev2`.",
+							ValidateFunc: validation.StringInSlice([]string{"ikev1", "ikev2"}, false),
 						},
 						"ike_life_time": {
 							Type:     schema.TypeString,
 							Required: true,
+							Description: "IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. " +
+								"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+								"must be a duration with unit `s`, `m`, or `h` (e.g. `28800s`, `480m`, `8h`)"),
 						},
 						"lifetime": {
 							Type:     schema.TypeString,
 							Required: true,
+							Description: "IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. " +
+								"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+								"must be a duration with unit `s`, `m`, or `h` (e.g. `3600s`, `60m`, `1h`)"),
 						},
 						"dpd_delay": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+								"must be a duration like `5s`–`60s`"),
 						},
 						"dpd_timeout": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+								"must be a duration like `5s`–`60s`"),
 						},
 						"phase1": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Phase 1 (IKE) IPSec proposal lists.",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"auth": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 1 authentication algorithms (e.g. `[\"sha256\"]`).",
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"encryption": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 1 encryption algorithms (e.g. `[\"aes-cbc-256\"]`).",
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"dh": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 1 Diffie-Hellman group numbers (e.g. `[14]` for MODP2048).",
 										Elem: &schema.Schema{
 											Type: schema.TypeInt,
 										},
@@ -95,27 +134,31 @@ func resourceIpsecRedundant() *schema.Resource {
 								}},
 						},
 						"phase2": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Phase 2 (ESP/IPSec) proposal lists.",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"auth": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 2 authentication algorithms.",
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"encryption": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 2 encryption algorithms.",
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"dh": {
-										Type:     schema.TypeList,
-										Required: true,
+										Type:        schema.TypeList,
+										Required:    true,
+										Description: "List of phase 2 Diffie-Hellman group numbers.",
 										Elem: &schema.Schema{
 											Type: schema.TypeInt,
 										},
@@ -125,20 +168,24 @@ func resourceIpsecRedundant() *schema.Resource {
 					}},
 			},
 			"shared_settings": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Subnet routing settings shared by both tunnels.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"p81_gateway_subnets": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Check Point SASE gateway subnet CIDR blocks reachable through either tunnel.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 						"remote_gateway_subnets": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Remote-side subnet CIDR blocks reachable through either tunnel.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -146,86 +193,106 @@ func resourceIpsecRedundant() *schema.Resource {
 					}},
 			},
 			"tunnel1": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Primary tunnel endpoint configuration.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"passphrase": {
-							Type:      schema.TypeString,
-							Sensitive: true,
-							Required:  true,
+							Type:        schema.TypeString,
+							Sensitive:   true,
+							Required:    true,
+							Description: "Pre-shared key for this tunnel (8–64 characters).",
 						},
 						"gateway_id": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The ID of the SASE gateway that terminates this tunnel locally.",
 						},
 						"remote_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							Description: "Optional remote tunnel ID. Computed if not supplied.",
 						},
 						"tunnel_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							Description: "The server-assigned tunnel ID. Computed.",
 						},
 						"p81_gwinternal_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The Check Point SASE gateway internal IP on this tunnel.",
 						},
 						"remote_gwinternal_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote gateway internal IP on this tunnel.",
 						},
 						"remote_public_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote gateway public IP on this tunnel.",
 						},
 						"remote_asn": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote peer's BGP ASN as a string (e.g. `\"65010\"`).",
 						},
 					}},
 			},
 			"tunnel2": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Standby tunnel endpoint configuration. Same shape as `tunnel1`.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"passphrase": {
-							Type:      schema.TypeString,
-							Sensitive: true,
-							Required:  true,
+							Type:        schema.TypeString,
+							Sensitive:   true,
+							Required:    true,
+							Description: "Pre-shared key for this tunnel (8–64 characters).",
 						},
 						"tunnel_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							Description: "The server-assigned tunnel ID. Computed.",
 						},
 						"gateway_id": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The ID of the SASE gateway that terminates this tunnel locally.",
 						},
 						"remote_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							Description: "Optional remote tunnel ID. Computed if not supplied.",
 						},
 						"p81_gwinternal_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The Check Point SASE gateway internal IP on this tunnel.",
 						},
 						"remote_gwinternal_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote gateway internal IP on this tunnel.",
 						},
 						"remote_public_ip": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote gateway public IP on this tunnel.",
 						},
 						"remote_asn": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The remote peer's BGP ASN as a string (e.g. `\"65010\"`).",
 						},
 					}},
 			},
