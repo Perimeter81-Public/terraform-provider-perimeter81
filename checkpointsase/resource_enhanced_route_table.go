@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -18,6 +19,14 @@ resourceEnhancedRouteTable Setup the Enhanced Route Table Resource CRUD operatio
 */
 func resourceEnhancedRouteTable() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a route-table entry for a `checkpointsase_enhanced_network`. " +
+			"A route directs traffic for the specified `subnets` through a tunnel " +
+			"(or list of dynamic tunnels). " +
+			"Use `type = \"static\"` with `tunnel_id` for static tunnels, or " +
+			"`type = \"dynamic\"` with `tunnel_ids` for dynamic tunnels. " +
+			"The selected tunnel(s) must not already have a route table attached. " +
+			"**`network_id`, `type`, and the chosen tunnel field are immutable** — " +
+			"changing any of them forces resource replacement.",
 		CreateContext: resourceEnhancedRouteTableCreate,
 		ReadContext:   resourceEnhancedRouteTableRead,
 		UpdateContext: resourceEnhancedRouteTableUpdate,
@@ -36,23 +45,27 @@ func resourceEnhancedRouteTable() *schema.Resource {
 				Description: "The ID of the enhanced network this route table entry belongs to.",
 			},
 			"type": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The route type. Must be either 'static' or 'dynamic'.",
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				Description: "The route type. Must be either `static` or `dynamic`. " +
+					"Use with `tunnel_id` for static, or `tunnel_ids` for dynamic.",
+				ValidateFunc: validation.StringInSlice([]string{"static", "dynamic"}, false),
 			},
 			"tunnel_id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "The static tunnel ID. Required when type is 'static'. The selected static tunnel must not already have a route table.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"tunnel_ids"},
+				Description:   "The static tunnel ID. Required when type is `static`. Mutually exclusive with `tunnel_ids`. The selected static tunnel must not already have a route table.",
 			},
 			"tunnel_ids": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "The list of dynamic tunnel IDs. Required when type is 'dynamic'. The selected dynamic tunnels must not already have a route table.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				Type:          schema.TypeList,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"tunnel_id"},
+				Description:   "The list of dynamic tunnel IDs. Required when type is `dynamic`. Mutually exclusive with `tunnel_id`. The selected dynamic tunnels must not already have a route table.",
+				Elem:          &schema.Schema{Type: schema.TypeString},
 			},
 			"subnets": {
 				Type:        schema.TypeList,

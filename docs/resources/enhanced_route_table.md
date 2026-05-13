@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_route_table Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a route-table entry for a checkpointsase_enhanced_network. A route directs traffic for the specified subnets through a tunnel (or list of dynamic tunnels). Use type = "static" with tunnel_id for static tunnels, or type = "dynamic" with tunnel_ids for dynamic tunnels. The selected tunnel(s) must not already have a route table attached. network_id, type, and the chosen tunnel field are immutable — changing any of them forces resource replacement.
 ---
 
 # checkpointsase_enhanced_route_table (Resource)
 
-
+Manages a route-table entry for a `checkpointsase_enhanced_network`. A route directs traffic for the specified `subnets` through a tunnel (or list of dynamic tunnels). Use `type = "static"` with `tunnel_id` for static tunnels, or `type = "dynamic"` with `tunnel_ids` for dynamic tunnels. The selected tunnel(s) must not already have a route table attached. **`network_id`, `type`, and the chosen tunnel field are immutable** — changing any of them forces resource replacement.
 
 ## Example Usage
 
@@ -30,13 +30,13 @@ resource "checkpointsase_enhanced_route_table" "example" {
 
 - `network_id` (String) The ID of the enhanced network this route table entry belongs to.
 - `subnets` (List of String) List of subnet CIDR blocks for the route table entry.
-- `type` (String) The route type. Must be either 'static' or 'dynamic'.
+- `type` (String) The route type. Must be either `static` or `dynamic`. Use with `tunnel_id` for static, or `tunnel_ids` for dynamic.
 
 ### Optional
 
 - `last_updated` (String) Timestamp of the last update to this resource.
-- `tunnel_id` (String) The static tunnel ID. Required when type is 'static'. The selected static tunnel must not already have a route table.
-- `tunnel_ids` (List of String) The list of dynamic tunnel IDs. Required when type is 'dynamic'. The selected dynamic tunnels must not already have a route table.
+- `tunnel_id` (String) The static tunnel ID. Required when type is `static`. Mutually exclusive with `tunnel_ids`. The selected static tunnel must not already have a route table.
+- `tunnel_ids` (List of String) The list of dynamic tunnel IDs. Required when type is `dynamic`. Mutually exclusive with `tunnel_id`. The selected dynamic tunnels must not already have a route table.
 
 ### Read-Only
 
