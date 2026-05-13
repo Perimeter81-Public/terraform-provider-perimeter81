@@ -3,6 +3,7 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -19,112 +21,154 @@ resourceIpsecSingle Setup the IpSec-Signle Resource CRUD operations
 */
 func resourceIpsecSingle() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a single IPsec tunnel attached to one gateway of a " +
+			"`checkpointsase_network`. Use `checkpointsase_ipsec_redundant` for an " +
+			"active/standby pair. " +
+			"**`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are " +
+			"immutable** — changing any of them forces resource replacement. All " +
+			"other attributes can be updated in place.",
 		CreateContext: resourceIpsecSingleCreate,
 		ReadContext:   resourceIpsecSingleRead,
 		UpdateContext: resourceIpsecSingleUpdate,
 		DeleteContext: resourceIpsecSingleDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"region_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.",
 			},
 			"network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the standard network the tunnel belongs to.",
 			},
 			"gateway_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the SASE gateway that terminates this tunnel locally.",
 			},
 			"tunnel_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Display name for the IPsec tunnel.",
 			},
 			"key_exchange": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "IKE version for key exchange. Must be `ikev1` or `ikev2`.",
+				ValidateFunc: validation.StringInSlice([]string{"ikev1", "ikev2"}, false),
 			},
 			"ike_life_time": {
 				Type:     schema.TypeString,
 				Required: true,
+				Description: "IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `28800s`, `480m`, `8h`)"),
 			},
 			"lifetime": {
 				Type:     schema.TypeString,
 				Required: true,
+				Description: "IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `3600s`, `60m`, `1h`)"),
 			},
 			"dpd_delay": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"dpd_timeout": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"passphrase": {
-				Type:      schema.TypeString,
-				Sensitive: true,
-				Required:  true,
+				Type:        schema.TypeString,
+				Sensitive:   true,
+				Required:    true,
+				Description: "Pre-shared key for tunnel authentication (8–64 characters).",
 			},
 			"remote_public_ip": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The remote gateway public IP address.",
 			},
 			"remote_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Optional remote tunnel ID. Computed if not supplied.",
 			},
 			"created_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was created (server-assigned).",
 			},
 			"updated_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was last updated server-side.",
 			},
 			"p81_gateway_subnets": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "Check Point SASE gateway subnet CIDR blocks reachable through this tunnel.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 			},
 			"remote_gateway_subnets": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "Remote-side subnet CIDR blocks reachable through this tunnel.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 			},
 			"phase1": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "Phase 1 (IKE) IPSec proposal lists.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"auth": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 1 authentication algorithms (e.g. `[\"sha256\"]`).",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 						"encryption": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 1 encryption algorithms (e.g. `[\"aes-cbc-256\"]`).",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 						"dh": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 1 Diffie-Hellman group numbers (e.g. `[14]` for MODP2048).",
 							Elem: &schema.Schema{
 								Type: schema.TypeInt,
 							},
@@ -132,27 +176,31 @@ func resourceIpsecSingle() *schema.Resource {
 					}},
 			},
 			"phase2": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "Phase 2 (ESP/IPSec) proposal lists.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"auth": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 2 authentication algorithms.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 						"encryption": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 2 encryption algorithms.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
 						},
 						"dh": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "List of phase 2 Diffie-Hellman group numbers.",
 							Elem: &schema.Schema{
 								Type: schema.TypeInt,
 							},

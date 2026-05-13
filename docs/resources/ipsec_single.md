@@ -3,36 +3,45 @@
 page_title: "checkpointsase_ipsec_single Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a single IPsec tunnel attached to one gateway of a checkpointsase_network. Use checkpointsase_ipsec_redundant for an active/standby pair. network_id, region_id, gateway_id, and tunnel_name are immutable — changing any of them forces resource replacement. All other attributes can be updated in place.
 ---
 
 # checkpointsase_ipsec_single (Resource)
 
-
+Manages a single IPsec tunnel attached to one gateway of a `checkpointsase_network`. Use `checkpointsase_ipsec_redundant` for an active/standby pair. **`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are immutable** — changing any of them forces resource replacement. All other attributes can be updated in place.
 
 ## Example Usage
 
 ```terraform
-# A single-gateway IPsec tunnel attached to a standard network.
+# A single-tunnel IPsec attachment to one gateway of a standard network.
+# Timing fields use duration-string syntax ("30s", "60m", "8h"). `dh` values
+# are integer Diffie-Hellman group numbers (e.g. 14 = MODP2048).
 resource "checkpointsase_ipsec_single" "example" {
   network_id             = "ZwAeo5wqiF"
   region_id              = "K7tEfRm9vQ"
   gateway_id             = "abc12345DE"
   tunnel_name            = "ipsecSingle01"
   remote_public_ip       = "203.0.113.20"
+  p81_gateway_subnets    = ["10.99.0.0/24"]
   remote_gateway_subnets = ["192.168.20.0/24"]
   passphrase             = "ChangeMe-shared-secret"
 
-  key_exchange = "ikev2"
-  ike_life_time = 86400
-  lifetime      = 3600
-  dpd_delay     = 30
-  dpd_timeout   = 120
+  key_exchange  = "ikev2"
+  ike_life_time = "28800s"
+  lifetime      = "3600s"
+  dpd_delay     = "30s"
+  dpd_timeout   = "60s"
 
-  proposals {
-    auth       = "sha256"
-    encryption = "aes-cbc-256"
-    dh         = "modp2048"
+  phase1 {
+    auth       = ["sha256"]
+    encryption = ["aes-cbc-256"]
+    dh         = [14]
+  }
+
+  phase2 {
+    auth       = ["sha256"]
+    encryption = ["aes-cbc-256"]
+    dh         = [14]
   }
 }
 ```
@@ -42,28 +51,28 @@ resource "checkpointsase_ipsec_single" "example" {
 
 ### Required
 
-- `dpd_delay` (String)
-- `dpd_timeout` (String)
-- `gateway_id` (String)
-- `ike_life_time` (String)
-- `key_exchange` (String)
-- `lifetime` (String)
-- `network_id` (String)
-- `p81_gateway_subnets` (List of String)
-- `passphrase` (String, Sensitive)
-- `phase1` (Block List, Min: 1) (see [below for nested schema](#nestedblock--phase1))
-- `phase2` (Block List, Min: 1) (see [below for nested schema](#nestedblock--phase2))
-- `region_id` (String)
-- `remote_gateway_subnets` (List of String)
-- `remote_public_ip` (String)
-- `tunnel_name` (String)
+- `dpd_delay` (String) Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `dpd_timeout` (String) Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `gateway_id` (String) The ID of the SASE gateway that terminates this tunnel locally.
+- `ike_life_time` (String) IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `key_exchange` (String) IKE version for key exchange. Must be `ikev1` or `ikev2`.
+- `lifetime` (String) IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `network_id` (String) The ID of the standard network the tunnel belongs to.
+- `p81_gateway_subnets` (List of String) Check Point SASE gateway subnet CIDR blocks reachable through this tunnel.
+- `passphrase` (String, Sensitive) Pre-shared key for tunnel authentication (8–64 characters).
+- `phase1` (Block List, Min: 1) Phase 1 (IKE) IPSec proposal lists. (see [below for nested schema](#nestedblock--phase1))
+- `phase2` (Block List, Min: 1) Phase 2 (ESP/IPSec) proposal lists. (see [below for nested schema](#nestedblock--phase2))
+- `region_id` (String) The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.
+- `remote_gateway_subnets` (List of String) Remote-side subnet CIDR blocks reachable through this tunnel.
+- `remote_public_ip` (String) The remote gateway public IP address.
+- `tunnel_name` (String) Display name for the IPsec tunnel.
 
 ### Optional
 
-- `created_at` (String)
-- `last_updated` (String)
-- `remote_id` (String)
-- `updated_at` (String)
+- `created_at` (String) Timestamp when the tunnel was created (server-assigned).
+- `last_updated` (String) Timestamp of the last update to this resource.
+- `remote_id` (String) Optional remote tunnel ID. Computed if not supplied.
+- `updated_at` (String) Timestamp when the tunnel was last updated server-side.
 
 ### Read-Only
 
@@ -74,9 +83,9 @@ resource "checkpointsase_ipsec_single" "example" {
 
 Required:
 
-- `auth` (List of String)
-- `dh` (List of Number)
-- `encryption` (List of String)
+- `auth` (List of String) List of phase 1 authentication algorithms (e.g. `["sha256"]`).
+- `dh` (List of Number) List of phase 1 Diffie-Hellman group numbers (e.g. `[14]` for MODP2048).
+- `encryption` (List of String) List of phase 1 encryption algorithms (e.g. `["aes-cbc-256"]`).
 
 
 <a id="nestedblock--phase2"></a>
@@ -84,9 +93,9 @@ Required:
 
 Required:
 
-- `auth` (List of String)
-- `dh` (List of Number)
-- `encryption` (List of String)
+- `auth` (List of String) List of phase 2 authentication algorithms.
+- `dh` (List of Number) List of phase 2 Diffie-Hellman group numbers.
+- `encryption` (List of String) List of phase 2 encryption algorithms.
 
 ## Import
 
