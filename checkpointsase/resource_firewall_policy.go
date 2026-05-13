@@ -19,6 +19,16 @@ the existing policy. There is no Create or Delete operation — only Read and Up
 */
 func resourceFirewallPolicy() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages the auto-created firewall policy of a `checkpointsase_network` " +
+			"or `checkpointsase_enhanced_network`. " +
+			"**This is an adopt-style resource**: the firewall policy is created server-side " +
+			"automatically when the network is provisioned, so terraform `create` here " +
+			"actually *adopts* the existing policy and applies your config; `destroy` simply " +
+			"releases the policy from terraform state without removing it server-side " +
+			"(the policy continues to exist for the lifetime of its parent network). " +
+			"Use this resource to manage the policy's `enabled` / `allowed` defaults and to " +
+			"declare `policy_rules`. " +
+			"**`network_id` is immutable** — changing it forces resource replacement.",
 		CreateContext: resourceFirewallPolicyCreate,
 		ReadContext:   resourceFirewallPolicyRead,
 		UpdateContext: resourceFirewallPolicyUpdate,
@@ -184,6 +194,13 @@ func resourceFirewallPolicyRead(ctx context.Context, d *schema.ResourceData, m i
 	if err := d.Set("policy_rules", policyRules); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Firewall Policy rules", err)
+	}
+
+	if policyData.Trace != nil {
+		if err := d.Set("trace", *policyData.Trace); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set Firewall Policy trace", err)
+		}
 	}
 
 	return diags

@@ -3,12 +3,12 @@
 page_title: "checkpointsase_firewall_policy Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages the auto-created firewall policy of a checkpointsase_network or checkpointsase_enhanced_network. This is an adopt-style resource: the firewall policy is created server-side automatically when the network is provisioned, so terraform create here actually adopts the existing policy and applies your config; destroy simply releases the policy from terraform state without removing it server-side (the policy continues to exist for the lifetime of its parent network). Use this resource to manage the policy's enabled / allowed defaults and to declare policy_rules. network_id is immutable — changing it forces resource replacement.
 ---
 
 # checkpointsase_firewall_policy (Resource)
 
-
+Manages the auto-created firewall policy of a `checkpointsase_network` or `checkpointsase_enhanced_network`. **This is an adopt-style resource**: the firewall policy is created server-side automatically when the network is provisioned, so terraform `create` here actually *adopts* the existing policy and applies your config; `destroy` simply releases the policy from terraform state without removing it server-side (the policy continues to exist for the lifetime of its parent network). Use this resource to manage the policy's `enabled` / `allowed` defaults and to declare `policy_rules`. **`network_id` is immutable** — changing it forces resource replacement.
 
 ## Example Usage
 
