@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -18,38 +19,56 @@ resourceNetwork Setup the IpSec-Signle Resource CRUD operations
 */
 func resourceNetwork() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a standard (cloud-hosted) network in Check Point SASE. " +
+			"Each network is deployed to one or more cloud regions via the `region` " +
+			"blocks; gateways are auto-provisioned per region. For SD-WAN networks " +
+			"(IPsec tunnels, BGP routing) use `checkpointsase_enhanced_network` instead. " +
+			"Companion resources: `checkpointsase_gateway` (manage the gateway pool of " +
+			"a region), `checkpointsase_firewall_policy` (manage the auto-created " +
+			"policy). " +
+			"**`network.subnet` and `region[*].cpregion_id` are effectively immutable** " +
+			"— changing them after creation is not propagated to the server.",
 		CreateContext: resourceNetworkCreate,
 		ReadContext:   resourceNetworkRead,
 		UpdateContext: resourceNetworkUpdate,
 		DeleteContext: resourceNetworkDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"network": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Optional: true,
+				Type:        schema.TypeList,
+				Computed:    true,
+				Optional:    true,
+				Description: "Network metadata: name, subnet, and tags.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"subnet": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							Description:  "CIDR block for the network. If omitted, the server assigns one. Immutable after creation — changing this value forces resource replacement.",
+							ValidateFunc: validation.IsCIDR,
 						},
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "Display name for the network. Must be 5–32 characters.",
+							ValidateFunc: validation.StringLenBetween(5, 32),
 						},
 						"dns": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "DNS suffix assigned to the network (server-assigned).",
 						},
 						"tags": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: "List of tags to associate with the network.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -58,34 +77,40 @@ func resourceNetwork() *schema.Resource {
 				},
 			},
 			"region": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "List of cloud regions where the network is deployed. At least one is required. Add or remove blocks to scale the network's regional footprint.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cpregion_id": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The Check Point SASE cloud-region ID. Retrieve available IDs from the `checkpointsase_regions` data source. Effectively immutable per region — to change a region's location, remove the existing block and add a new one.",
 						},
 						"region_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Server-assigned ID of this region instance within the network. Used as `region_id` by companion resources (`checkpointsase_gateway`, `checkpointsase_ipsec_*`).",
 						},
 						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Display name of the region (server-assigned).",
 						},
 						"default_gateway_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Public IP of the region's default gateway (server-assigned).",
 						},
 						"dns": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "DNS suffix for the region (server-assigned).",
 						},
 						"idle": {
-							Type:     schema.TypeBool,
-							Optional: true,
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Description: "Whether the region's gateways are idle (disabled for user traffic). Set to `false` to make the region active.",
 						},
 					},
 				},
