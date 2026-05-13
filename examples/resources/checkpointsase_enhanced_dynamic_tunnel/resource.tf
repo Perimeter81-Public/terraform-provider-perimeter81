@@ -19,7 +19,7 @@ resource "checkpointsase_enhanced_dynamic_tunnel" "example" {
   ike_life_time = "28800s"
   lifetime      = "3600s"
   dpd_delay     = "30s"
-  dpd_timeout   = "120s"
+  dpd_timeout   = "60s"
 
   phase1 {
     auth                = ["sha256"]

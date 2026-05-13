@@ -3,12 +3,14 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -18,6 +20,13 @@ resourceEnhancedDynamicTunnel Setup the Enhanced Dynamic Tunnel Resource CRUD op
 */
 func resourceEnhancedDynamicTunnel() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a dynamic (BGP-routed) IPsec tunnel attached to a " +
+			"`checkpointsase_enhanced_network`. A dynamic tunnel can span multiple " +
+			"regions: each `tunnel` block declares one endpoint, and shared phase1 / " +
+			"phase2 / lifetime parameters apply to all of them. " +
+			"Use `checkpointsase_enhanced_route_table` with `type = \"dynamic\"` to " +
+			"attach routes to the resulting tunnel group. " +
+			"**`network_id` is immutable** — changing it forces resource replacement.",
 		CreateContext: resourceEnhancedDynamicTunnelCreate,
 		ReadContext:   resourceEnhancedDynamicTunnelRead,
 		UpdateContext: resourceEnhancedDynamicTunnelUpdate,
@@ -57,9 +66,10 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 							Description: "The enhanced region ID for this tunnel endpoint.",
 						},
 						"auth_type": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							Description: "Authentication type for this tunnel endpoint ('psk' or 'cert').",
+							Type:         schema.TypeString,
+							Optional:     true,
+							Description:  "Authentication type for this tunnel endpoint. Must be `psk` or `cert`.",
+							ValidateFunc: validation.StringInSlice([]string{"psk", "cert"}, false),
 						},
 						"passphrase": {
 							Type:        schema.TypeString,
@@ -108,35 +118,47 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"peak_bandwidth": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     1000,
-				Description: "Expected peak throughput of the tunnel communication in Mbps. Defaults to 1000.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1000,
+				Description:  "Expected peak throughput of the tunnel communication in Mbps. Allowed range is 10–8000. Defaults to 1000.",
+				ValidateFunc: validation.IntBetween(10, 8000),
 			},
 			"key_exchange": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IKE version for key exchange (e.g., 'ikev2').",
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "IKE version for key exchange. Must be `ikev1` or `ikev2`.",
+				ValidateFunc: validation.StringInSlice([]string{"ikev1", "ikev2"}, false),
 			},
 			"ike_life_time": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IKE lifetime value (e.g., '28800s', '480m', '8h').",
+				Type:     schema.TypeString,
+				Required: true,
+				Description: "IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `28800s`, `480m`, `8h`)"),
 			},
 			"lifetime": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IPSec SA lifetime value (e.g., '3600s', '60m', '1h').",
+				Type:     schema.TypeString,
+				Required: true,
+				Description: "IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. " +
+					"Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\d+[smh]$`),
+					"must be a duration with unit `s`, `m`, or `h` (e.g. `3600s`, `60m`, `1h`)"),
 			},
 			"dpd_delay": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Dead peer detection delay interval (e.g., '30s').",
+				Description: "Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"dpd_timeout": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Dead peer detection timeout value (e.g., '60s').",
+				Description: "Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([5-9]|[1-5]\d|60)s$`),
+					"must be a duration like `5s`–`60s`"),
 			},
 			"phase1": {
 				Type:        schema.TypeList,

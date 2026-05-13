@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_dynamic_tunnel Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a dynamic (BGP-routed) IPsec tunnel attached to a checkpointsase_enhanced_network. A dynamic tunnel can span multiple regions: each tunnel block declares one endpoint, and shared phase1 / phase2 / lifetime parameters apply to all of them. Use checkpointsase_enhanced_route_table with type = "dynamic" to attach routes to the resulting tunnel group. network_id is immutable — changing it forces resource replacement.
 ---
 
 # checkpointsase_enhanced_dynamic_tunnel (Resource)
 
-
+Manages a dynamic (BGP-routed) IPsec tunnel attached to a `checkpointsase_enhanced_network`. A dynamic tunnel can span multiple regions: each `tunnel` block declares one endpoint, and shared phase1 / phase2 / lifetime parameters apply to all of them. Use `checkpointsase_enhanced_route_table` with `type = "dynamic"` to attach routes to the resulting tunnel group. **`network_id` is immutable** — changing it forces resource replacement.
 
 ## Example Usage
 
@@ -34,7 +34,7 @@ resource "checkpointsase_enhanced_dynamic_tunnel" "example" {
   ike_life_time = "28800s"
   lifetime      = "3600s"
   dpd_delay     = "30s"
-  dpd_timeout   = "120s"
+  dpd_timeout   = "60s"
 
   phase1 {
     auth                = ["sha256"]
@@ -55,11 +55,11 @@ resource "checkpointsase_enhanced_dynamic_tunnel" "example" {
 
 ### Required
 
-- `dpd_delay` (String) Dead peer detection delay interval (e.g., '30s').
-- `dpd_timeout` (String) Dead peer detection timeout value (e.g., '60s').
-- `ike_life_time` (String) IKE lifetime value (e.g., '28800s', '480m', '8h').
-- `key_exchange` (String) IKE version for key exchange (e.g., 'ikev2').
-- `lifetime` (String) IPSec SA lifetime value (e.g., '3600s', '60m', '1h').
+- `dpd_delay` (String) Dead peer detection delay interval, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `dpd_timeout` (String) Dead peer detection timeout, formatted `<int>s`. Allowed range is `5s`–`60s`.
+- `ike_life_time` (String) IKE lifetime as a `<int><unit>` duration string, e.g. `28800s`, `480m`, or `8h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
+- `key_exchange` (String) IKE version for key exchange. Must be `ikev1` or `ikev2`.
+- `lifetime` (String) IPSec SA lifetime as a `<int><unit>` duration string, e.g. `3600s`, `60m`, or `1h`. Server-enforced ranges: `s` 10–86400, `m` 1–1440, `h` 1–24.
 - `network_id` (String) The ID of the enhanced network this dynamic tunnel belongs to.
 - `p81_gateway_subnets` (List of String) List of Check Point SASE gateway subnet CIDR blocks (shared settings).
 - `phase1` (Block List, Min: 1, Max: 1) Phase 1 (IKE) IPSec configuration. (see [below for nested schema](#nestedblock--phase1))
@@ -72,7 +72,7 @@ resource "checkpointsase_enhanced_dynamic_tunnel" "example" {
 
 - `description` (String) Optional description for the dynamic tunnel.
 - `last_updated` (String) Timestamp of the last update to this resource.
-- `peak_bandwidth` (Number) Expected peak throughput of the tunnel communication in Mbps. Defaults to 1000.
+- `peak_bandwidth` (Number) Expected peak throughput of the tunnel communication in Mbps. Allowed range is 10–8000. Defaults to 1000.
 
 ### Read-Only
 
@@ -107,7 +107,7 @@ Required:
 
 Optional:
 
-- `auth_type` (String) Authentication type for this tunnel endpoint ('psk' or 'cert').
+- `auth_type` (String) Authentication type for this tunnel endpoint. Must be `psk` or `cert`.
 - `customer_root_ca` (String) Customer root certificate authority. Required when auth_type is 'cert'.
 - `p81_gw_internal_ip` (String) The Check Point SASE gateway internal IP address.
 - `passphrase` (String, Sensitive) Pre-shared key for tunnel authentication (8-64 characters). Required when auth_type is 'psk'.
