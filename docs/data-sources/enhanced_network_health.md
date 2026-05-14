@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_network_health Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Get tunnel health status for a single checkpointsase_enhanced_network. Returns one entry per tunnel showing its current status (passing, critical, or unknown). Use the checkpointsase_enhanced_networks data source to look up the network ID.
 ---
 
 # checkpointsase_enhanced_network_health (Data Source)
 
-
+Get tunnel health status for a single `checkpointsase_enhanced_network`. Returns one entry per tunnel showing its current `status` (`passing`, `critical`, or `unknown`). Use the `checkpointsase_enhanced_networks` data source to look up the network ID.
 
 ## Example Usage
 

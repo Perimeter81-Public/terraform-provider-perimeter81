@@ -18,6 +18,10 @@ dataSourceEnhancedNetworkHealth Query the health status of an enhanced network
 */
 func dataSourceEnhancedNetworkHealth() *schema.Resource {
 	return &schema.Resource{
+		Description: "Get tunnel health status for a single `checkpointsase_enhanced_network`. " +
+			"Returns one entry per tunnel showing its current `status` (`passing`, " +
+			"`critical`, or `unknown`). Use the `checkpointsase_enhanced_networks` " +
+			"data source to look up the network ID.",
 		ReadContext: dataSourceEnhancedNetworkHealthRead,
 		Schema: map[string]*schema.Schema{
 			"network_id": {
