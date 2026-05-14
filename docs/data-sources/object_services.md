@@ -3,12 +3,12 @@
 page_title: "checkpointsase_object_services Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all service objects in Check Point SASE's shared object library. Use checkpointsase_object_services (the resource) to manage individual entries.
 ---
 
 # checkpointsase_object_services (Data Source)
 
-
+List all service objects in Check Point SASE's shared object library. Use `checkpointsase_object_services` (the resource) to manage individual entries.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ data "checkpointsase_object_services" "all" {}
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `object_services` (List of Object) (see [below for nested schema](#nestedatt--object_services))
+- `object_services` (List of Object) The list of service objects. (see [below for nested schema](#nestedatt--object_services))
 
 <a id="nestedatt--object_services"></a>
 ### Nested Schema for `object_services`
@@ -30,6 +30,7 @@ data "checkpointsase_object_services" "all" {}
 Read-Only:
 
 - `description` (String)
+- `id` (String)
 - `name` (String)
 - `protocols` (List of Object) (see [below for nested schema](#nestedobjatt--object_services--protocols))
 

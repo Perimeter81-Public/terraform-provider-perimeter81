@@ -1228,8 +1228,13 @@ func flattenObjectServicesData(objectServicesItems []perimeter81Sdk.ObjectsServi
 		objectServices := make([]interface{}, len(objectServicesItems))
 		for i, objectServicesItem := range objectServicesItems {
 			objectService := make(map[string]interface{})
+			if objectServicesItem.Id != nil {
+				objectService["id"] = *objectServicesItem.Id
+			}
 			objectService["name"] = objectServicesItem.Name
-			objectService["description"] = objectServicesItem.Name
+			if objectServicesItem.Description != nil {
+				objectService["description"] = *objectServicesItem.Description
+			}
 			objectService["protocols"] = flattenProtocolsDataSourceData(objectServicesItem.Protocols)
 			objectServices[i] = objectService
 		}
