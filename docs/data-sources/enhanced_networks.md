@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_networks Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all enhanced (SD-WAN-capable) networks. Use checkpointsase_enhanced_network to manage individual networks or checkpointsase_all_networks for the combined standard + enhanced view.
 ---
 
 # checkpointsase_enhanced_networks (Data Source)
 
-
+List all enhanced (SD-WAN-capable) networks. Use `checkpointsase_enhanced_network` to manage individual networks or `checkpointsase_all_networks` for the combined standard + enhanced view.
 
 ## Example Usage
 

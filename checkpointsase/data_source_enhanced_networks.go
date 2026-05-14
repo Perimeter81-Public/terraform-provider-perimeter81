@@ -18,6 +18,10 @@ dataSourceEnhancedNetworks Query all Enhanced Networks
 */
 func dataSourceEnhancedNetworks() *schema.Resource {
 	return &schema.Resource{
+		Description: "List all enhanced (SD-WAN-capable) networks. Use " +
+			"`checkpointsase_enhanced_network` to manage individual networks " +
+			"or `checkpointsase_all_networks` for the combined standard + " +
+			"enhanced view.",
 		ReadContext: dataSourceEnhancedNetworksRead,
 		Schema: map[string]*schema.Schema{
 			"networks": {
