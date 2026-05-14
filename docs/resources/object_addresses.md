@@ -44,6 +44,8 @@ resource "checkpointsase_object_addresses" "internal_api" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Import an existing object_addresses resource by its ID.
 terraform import checkpointsase_object_addresses.example <id>

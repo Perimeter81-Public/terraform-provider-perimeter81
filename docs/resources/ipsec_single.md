@@ -101,6 +101,8 @@ Required:
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Import an existing ipsec_single tunnel using composite ID: <network_id>-<tunnel_id>
 terraform import checkpointsase_ipsec_single.example <network_id>-<tunnel_id>

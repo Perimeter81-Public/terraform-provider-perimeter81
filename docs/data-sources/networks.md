@@ -76,7 +76,7 @@ Read-Only:
 - `updatedat` (String)
 
 <a id="nestedobjatt--networks--regions--instances--tunnels"></a>
-### Nested Schema for `networks.regions.instances.updatedat`
+### Nested Schema for `networks.regions.instances.tunnels`
 
 Read-Only:
 
