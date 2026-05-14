@@ -18,6 +18,10 @@ dataSourceNetworkHealth Query the health status of a standard network
 */
 func dataSourceNetworkHealth() *schema.Resource {
 	return &schema.Resource{
+		Description: "Get gateway and tunnel health status for a single standard " +
+			"`checkpointsase_network`. Returns one entry per gateway or tunnel with " +
+			"a `type` (`gateway` or `tunnel`) and `status` (`passing`, `critical`, " +
+			"or `unknown`).",
 		ReadContext: dataSourceNetworkHealthRead,
 		Schema: map[string]*schema.Schema{
 			"network_id": {

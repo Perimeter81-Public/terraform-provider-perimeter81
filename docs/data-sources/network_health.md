@@ -3,12 +3,12 @@
 page_title: "checkpointsase_network_health Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Get gateway and tunnel health status for a single standard checkpointsase_network. Returns one entry per gateway or tunnel with a type (gateway or tunnel) and status (passing, critical, or unknown).
 ---
 
 # checkpointsase_network_health (Data Source)
 
-
+Get gateway and tunnel health status for a single standard `checkpointsase_network`. Returns one entry per gateway or tunnel with a `type` (`gateway` or `tunnel`) and `status` (`passing`, `critical`, or `unknown`).
 
 ## Example Usage
 
