@@ -3,12 +3,12 @@
 page_title: "checkpointsase_route_table Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Read the route table of a single standard checkpointsase_network. Returns one entry per route with subnets, interface name, and propagation flag. Use network_id from checkpointsase_standard_networks to look up the right network.
 ---
 
 # checkpointsase_route_table (Data Source)
 
-
+Read the route table of a single standard `checkpointsase_network`. Returns one entry per route with `subnets`, interface name, and propagation flag. Use `network_id` from `checkpointsase_standard_networks` to look up the right network.
 
 ## Example Usage
 

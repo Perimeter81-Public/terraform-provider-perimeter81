@@ -18,6 +18,9 @@ dataSourceRouteTable Query the standard network route table for a given network
 */
 func dataSourceRouteTable() *schema.Resource {
 	return &schema.Resource{
+		Description: "Read the route table of a single standard `checkpointsase_network`. " +
+			"Returns one entry per route with `subnets`, interface name, and propagation flag. " +
+			"Use `network_id` from `checkpointsase_standard_networks` to look up the right network.",
 		ReadContext: dataSourceRouteTableRead,
 		Schema: map[string]*schema.Schema{
 			"network_id": {
