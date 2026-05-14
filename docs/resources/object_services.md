@@ -3,12 +3,12 @@
 page_title: "checkpointsase_object_services Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a service object in Check Point SASE's shared object library. Service objects are reusable references to one or more transport-layer protocol + port combinations; they're typically referenced from firewall policy rules. Use checkpointsase_object_addresses for the parallel address-object resource. ICMP: the v2.3 API also supports protocol = "icmp", but this provider does not yet expose the corresponding protocolOptions payload, so only tcp and udp are usable here.
 ---
 
 # checkpointsase_object_services (Resource)
 
-
+Manages a service object in Check Point SASE's shared object library. Service objects are reusable references to one or more transport-layer protocol + port combinations; they're typically referenced from firewall policy rules. Use `checkpointsase_object_addresses` for the parallel address-object resource. **ICMP**: the v2.3 API also supports `protocol = "icmp"`, but this provider does not yet expose the corresponding `protocolOptions` payload, so only `tcp` and `udp` are usable here.
 
 ## Example Usage
 
@@ -30,13 +30,13 @@ resource "checkpointsase_object_services" "web_ports" {
 
 ### Required
 
-- `name` (String)
-- `protocols` (Block List, Min: 1) (see [below for nested schema](#nestedblock--protocols))
+- `name` (String) Display name of the service object. Must be 3–100 characters.
+- `protocols` (Block List, Min: 1) List of protocol+port combinations covered by this service object. At least one entry is required. (see [below for nested schema](#nestedblock--protocols))
 
 ### Optional
 
-- `description` (String)
-- `last_updated` (String)
+- `description` (String) Optional description of the service object.
+- `last_updated` (String) Timestamp of the last update to this resource.
 
 ### Read-Only
 
@@ -47,9 +47,9 @@ resource "checkpointsase_object_services" "web_ports" {
 
 Required:
 
-- `protocol` (String)
-- `value` (List of Number)
-- `value_type` (String)
+- `protocol` (String) Transport protocol. Must be `tcp` or `udp`.
+- `value` (List of Number) Port numbers. Shape depends on `value_type`: 1 element for `single`, 2 elements (start, end) for `range`, 1+ for `list`. Each value must be a valid port (1–65535).
+- `value_type` (String) Shape of the `value` list. Must be `single` (one port), `range` (exactly two ports, low–high), or `list` (multiple discrete ports).
 
 ## Import
 

@@ -7,6 +7,7 @@ import (
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -16,42 +17,61 @@ resourceObjectServices Setup the Object Services Resource CRUD operations
 */
 func resourceObjectServices() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a service object in Check Point SASE's shared object library. " +
+			"Service objects are reusable references to one or more transport-layer " +
+			"protocol + port combinations; they're typically referenced from firewall " +
+			"policy rules. Use `checkpointsase_object_addresses` for the parallel " +
+			"address-object resource. " +
+			"**ICMP**: the v2.3 API also supports `protocol = \"icmp\"`, but this " +
+			"provider does not yet expose the corresponding `protocolOptions` payload, " +
+			"so only `tcp` and `udp` are usable here.",
 		CreateContext: resourceObjectServicesCreate,
 		ReadContext:   resourceObjectServicesRead,
 		UpdateContext: resourceObjectServicesUpdate,
 		DeleteContext: resourceObjectServicesDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Display name of the service object. Must be 3–100 characters.",
+				ValidateFunc: validation.StringLenBetween(3, 100),
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Optional description of the service object.",
 			},
 			"protocols": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "List of protocol+port combinations covered by this service object. At least one entry is required.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"protocol": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "Transport protocol. Must be `tcp` or `udp`.",
+							ValidateFunc: validation.StringInSlice([]string{"tcp", "udp"}, false),
 						},
 						"value_type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "Shape of the `value` list. Must be `single` (one port), `range` (exactly two ports, low–high), or `list` (multiple discrete ports).",
+							ValidateFunc: validation.StringInSlice([]string{"single", "range", "list"}, false),
 						},
 						"value": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Required:    true,
+							Description: "Port numbers. Shape depends on `value_type`: 1 element for `single`, 2 elements (start, end) for `range`, 1+ for `list`. Each value must be a valid port (1–65535).",
 							Elem: &schema.Schema{
-								Type: schema.TypeInt,
+								Type:         schema.TypeInt,
+								ValidateFunc: validation.IsPortNumber,
 							},
 						},
 					}},
