@@ -18,6 +18,11 @@ dataSourceEnhancedRouteTable Query the enhanced network route table for a given 
 */
 func dataSourceEnhancedRouteTable() *schema.Resource {
 	return &schema.Resource{
+		Description: "List the route table entries for a single " +
+			"`checkpointsase_enhanced_network`. Each entry maps a list of " +
+			"subnets to one or more tunnels. Use the " +
+			"`checkpointsase_enhanced_route_table` resource to manage entries; " +
+			"use this data source to read them.",
 		ReadContext: dataSourceEnhancedRouteTableRead,
 		Schema: map[string]*schema.Schema{
 			"network_id": {

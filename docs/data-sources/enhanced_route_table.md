@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_route_table Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List the route table entries for a single checkpointsase_enhanced_network. Each entry maps a list of subnets to one or more tunnels. Use the checkpointsase_enhanced_route_table resource to manage entries; use this data source to read them.
 ---
 
 # checkpointsase_enhanced_route_table (Data Source)
 
-
+List the route table entries for a single `checkpointsase_enhanced_network`. Each entry maps a list of subnets to one or more tunnels. Use the `checkpointsase_enhanced_route_table` resource to manage entries; use this data source to read them.
 
 ## Example Usage
 
