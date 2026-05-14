@@ -18,6 +18,10 @@ dataSourceEnhancedRegions Query all available Check Point SASE regions that supp
 */
 func dataSourceEnhancedRegions() *schema.Resource {
 	return &schema.Resource{
+		Description: "List the cloud regions available for deploying " +
+			"`checkpointsase_enhanced_network` resources. Each entry provides the " +
+			"`id` to pass as `harmony_sase_region_id` when declaring an enhanced " +
+			"network's region.",
 		ReadContext: dataSourceEnhancedRegionsRead,
 		Schema: map[string]*schema.Schema{
 			"regions": {

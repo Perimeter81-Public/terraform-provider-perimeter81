@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_regions Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List the cloud regions available for deploying checkpointsase_enhanced_network resources. Each entry provides the id to pass as harmony_sase_region_id when declaring an enhanced network's region.
 ---
 
 # checkpointsase_enhanced_regions (Data Source)
 
-
+List the cloud regions available for deploying `checkpointsase_enhanced_network` resources. Each entry provides the `id` to pass as `harmony_sase_region_id` when declaring an enhanced network's region.
 
 ## Example Usage
 
