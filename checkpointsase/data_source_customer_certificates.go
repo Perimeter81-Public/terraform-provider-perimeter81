@@ -18,6 +18,11 @@ dataSourceCustomerCertificates Query all customer certificates for enhanced netw
 */
 func dataSourceCustomerCertificates() *schema.Resource {
 	return &schema.Resource{
+		Description: "List customer-uploaded TLS certificates available to enhanced networks. " +
+			"Used when configuring `auth_type = \"cert\"` on enhanced static or dynamic " +
+			"tunnels — the certificate IDs returned here can be referenced from the " +
+			"tunnel's `customer_root_ca` attribute. " +
+			"Returns an empty list (no error) when the tenant has no enhanced networks.",
 		ReadContext: dataSourceCustomerCertificatesRead,
 		Schema: map[string]*schema.Schema{
 			"certificates": {

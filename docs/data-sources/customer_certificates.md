@@ -3,12 +3,12 @@
 page_title: "checkpointsase_customer_certificates Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List customer-uploaded TLS certificates available to enhanced networks. Used when configuring auth_type = "cert" on enhanced static or dynamic tunnels — the certificate IDs returned here can be referenced from the tunnel's customer_root_ca attribute. Returns an empty list (no error) when the tenant has no enhanced networks.
 ---
 
 # checkpointsase_customer_certificates (Data Source)
 
-
+List customer-uploaded TLS certificates available to enhanced networks. Used when configuring `auth_type = "cert"` on enhanced static or dynamic tunnels — the certificate IDs returned here can be referenced from the tunnel's `customer_root_ca` attribute. Returns an empty list (no error) when the tenant has no enhanced networks.
 
 ## Example Usage
 
