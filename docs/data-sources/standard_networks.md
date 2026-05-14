@@ -29,13 +29,13 @@ data "checkpointsase_standard_networks" "all" {}
 
 Read-Only:
 
-- `accesstype` (String)
-- `createdat` (String)
+- `access_type` (String)
+- `created_at` (String)
 - `dns` (String)
 - `id` (String)
-- `isdefault` (Boolean)
+- `is_default` (Boolean)
 - `name` (String)
 - `subnet` (String)
 - `tags` (List of String)
-- `tenantid` (String)
-- `updatedat` (String)
+- `tenant_id` (String)
+- `updated_at` (String)

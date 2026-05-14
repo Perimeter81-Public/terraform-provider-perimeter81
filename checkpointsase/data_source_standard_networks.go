@@ -54,27 +54,27 @@ func dataSourceStandardNetworks() *schema.Resource {
 							Computed:    true,
 							Description: "The subnet CIDR block of the network.",
 						},
-						"accesstype": {
+						"access_type": {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "The access type of the network.",
 						},
-						"isdefault": {
+						"is_default": {
 							Type:        schema.TypeBool,
 							Computed:    true,
 							Description: "Whether this is the default network.",
 						},
-						"tenantid": {
+						"tenant_id": {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "The tenant ID that owns this network.",
 						},
-						"createdat": {
+						"created_at": {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "The creation timestamp.",
 						},
-						"updatedat": {
+						"updated_at": {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "The last update timestamp.",
@@ -105,11 +105,11 @@ func dataSourceStandardNetworksRead(ctx context.Context, d *schema.ResourceData,
 		network["tags"] = n.GetTags()
 		network["dns"] = n.GetDns()
 		network["subnet"] = n.GetSubnet()
-		network["accesstype"] = n.GetAccessType()
-		network["isdefault"] = n.GetIsDefault()
-		network["tenantid"] = n.GetTenantId()
-		network["createdat"] = n.GetCreatedAt().String()
-		network["updatedat"] = n.GetUpdatedAt().String()
+		network["access_type"] = n.GetAccessType()
+		network["is_default"] = n.GetIsDefault()
+		network["tenant_id"] = n.GetTenantId()
+		network["created_at"] = n.GetCreatedAt().String()
+		network["updated_at"] = n.GetUpdatedAt().String()
 		flatNetworks[i] = network
 	}
 
