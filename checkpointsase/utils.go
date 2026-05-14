@@ -1304,8 +1304,13 @@ func flattenObjectAddressesData(objectAddressesItems []perimeter81Sdk.ObjectsAdd
 		objectAddresses := make([]interface{}, len(objectAddressesItems))
 		for i, objectAddressesItem := range objectAddressesItems {
 			objectAddress := make(map[string]interface{})
+			if objectAddressesItem.Id != nil {
+				objectAddress["id"] = *objectAddressesItem.Id
+			}
 			objectAddress["name"] = objectAddressesItem.Name
-			objectAddress["description"] = objectAddressesItem.Name
+			if objectAddressesItem.Description != nil {
+				objectAddress["description"] = *objectAddressesItem.Description
+			}
 			objectAddress["value_type"] = objectAddressesItem.ValueType
 			objectAddress["value"] = objectAddressesItem.Value
 			objectAddresses[i] = objectAddress

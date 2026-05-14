@@ -18,32 +18,46 @@ dataSourceObjectAddresses Query all ObjectAddresses
 */
 func dataSourceObjectAddresses() *schema.Resource {
 	return &schema.Resource{
+		Description: "List all address objects in Check Point SASE's shared object library. " +
+			"Use `checkpointsase_object_addresses` (the resource) to manage individual entries.",
 		ReadContext: dataSourceObjectAddressesRead,
 		Schema: map[string]*schema.Schema{
 			"object_addresses": {
-				Type:     schema.TypeList,
-				Computed: true,
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "The list of address objects.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The unique ID of the address object.",
+						},
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Display name of the address object.",
 						},
 						"description": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Description of the address object.",
 						},
 						"value_type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Category of the `value` list. One of `ip`, `list`, `cidr`, `fqdn`.",
 						},
 						"ip_version": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Deprecated:  "Not transmitted to or returned by the v2.3 server (hardcoded to `ipv4` and stripped from responses). Field retained for backward compatibility.",
+							Description: "IP version. Has no effect on the v2.3 server.",
 						},
 						"value": {
-							Type:     schema.TypeList,
-							Required: true,
+							Type:        schema.TypeList,
+							Computed:    true,
+							Description: "Address values. Shape depends on `value_type`.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},

@@ -3,12 +3,12 @@
 page_title: "checkpointsase_object_addresses Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all address objects in Check Point SASE's shared object library. Use checkpointsase_object_addresses (the resource) to manage individual entries.
 ---
 
 # checkpointsase_object_addresses (Data Source)
 
-
+List all address objects in Check Point SASE's shared object library. Use `checkpointsase_object_addresses` (the resource) to manage individual entries.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ data "checkpointsase_object_addresses" "all" {}
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `object_addresses` (List of Object) (see [below for nested schema](#nestedatt--object_addresses))
+- `object_addresses` (List of Object) The list of address objects. (see [below for nested schema](#nestedatt--object_addresses))
 
 <a id="nestedatt--object_addresses"></a>
 ### Nested Schema for `object_addresses`
@@ -30,6 +30,7 @@ data "checkpointsase_object_addresses" "all" {}
 Read-Only:
 
 - `description` (String)
+- `id` (String)
 - `ip_version` (String)
 - `name` (String)
 - `value` (List of String)
