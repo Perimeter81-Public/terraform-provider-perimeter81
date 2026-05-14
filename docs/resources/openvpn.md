@@ -3,12 +3,12 @@
 page_title: "checkpointsase_openvpn Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages an OpenVPN client tunnel attached to one gateway of a checkpointsase_network. OpenVPN tunnels are credentialed: on creation the server returns a one-time secret_access_key (read it from state — it's not retrievable from the API later). version is a credential-rotation trigger, not a real version: change its integer value to call the server's update endpoint and rotate the tunnel's credentials. The actual numeric value is opaque — what matters is that it changes from the previous run. network_id, region_id, gateway_id, and tunnel_name are immutable — changing any of them forces resource replacement.
 ---
 
 # checkpointsase_openvpn (Resource)
 
-
+Manages an OpenVPN client tunnel attached to one gateway of a `checkpointsase_network`. OpenVPN tunnels are credentialed: on creation the server returns a one-time `secret_access_key` (read it from state — it's not retrievable from the API later). **`version` is a credential-rotation trigger**, not a real version: change its integer value to call the server's update endpoint and rotate the tunnel's credentials. The actual numeric value is opaque — what matters is that it changes from the previous run. **`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are immutable** — changing any of them forces resource replacement.
 
 ## Example Usage
 
@@ -29,24 +29,24 @@ resource "checkpointsase_openvpn" "example" {
 
 ### Required
 
-- `gateway_id` (String)
-- `network_id` (String)
-- `region_id` (String)
-- `tunnel_name` (String)
-- `version` (Number)
+- `gateway_id` (String) The ID of the SASE gateway that terminates this tunnel locally.
+- `network_id` (String) The ID of the standard network the tunnel belongs to.
+- `region_id` (String) The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.
+- `tunnel_name` (String) Display name for the OpenVPN tunnel.
+- `version` (Number) Credential-rotation trigger. Increment (or change) this integer to trigger a server-side rotation of `access_key_id` / `secret_access_key`. The numeric value itself has no meaning beyond change detection.
 
 ### Optional
 
-- `created_at` (String)
-- `last_updated` (String)
-- `type` (String)
-- `updated_at` (String)
+- `created_at` (String) Timestamp when the tunnel was created (server-assigned).
+- `last_updated` (String) Timestamp of the last update to this resource.
+- `updated_at` (String) Timestamp when the tunnel was last updated server-side.
 
 ### Read-Only
 
-- `access_key_id` (String)
+- `access_key_id` (String) Server-assigned credential ID for the OpenVPN client. Rotated when `version` changes.
 - `id` (String) The ID of this resource.
-- `secret_access_key` (String, Sensitive)
+- `secret_access_key` (String, Sensitive) Server-assigned credential secret for the OpenVPN client. Returned on create and on each rotation; the API does not allow re-fetching this value later, so the terraform state is the only durable copy.
+- `type` (String) Tunnel type (always `openvpn` server-side).
 
 ## Import
 

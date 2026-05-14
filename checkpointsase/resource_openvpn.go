@@ -19,59 +19,83 @@ resourceOpenvpn Setup the Openvpn Resource CRUD operations
 */
 func resourceOpenvpn() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages an OpenVPN client tunnel attached to one gateway of a " +
+			"`checkpointsase_network`. OpenVPN tunnels are credentialed: on creation " +
+			"the server returns a one-time `secret_access_key` (read it from state — " +
+			"it's not retrievable from the API later). " +
+			"**`version` is a credential-rotation trigger**, not a real version: " +
+			"change its integer value to call the server's update endpoint and rotate " +
+			"the tunnel's credentials. The actual numeric value is opaque — what " +
+			"matters is that it changes from the previous run. " +
+			"**`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are " +
+			"immutable** — changing any of them forces resource replacement.",
 		CreateContext: resourceOpenvpnCreate,
 		ReadContext:   resourceOpenvpnRead,
 		UpdateContext: resourceOpenvpnUpdate,
 		DeleteContext: resourceOpenvpnDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"region_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.",
 			},
 			"version": {
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "Credential-rotation trigger. Increment (or change) this integer to trigger a server-side rotation of `access_key_id` / `secret_access_key`. The numeric value itself has no meaning beyond change detection.",
 			},
 			"network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the standard network the tunnel belongs to.",
 			},
 			"gateway_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the SASE gateway that terminates this tunnel locally.",
 			},
 			"tunnel_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Display name for the OpenVPN tunnel.",
 			},
 			"access_key_id": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Server-assigned credential ID for the OpenVPN client. Rotated when `version` changes.",
 			},
 			"secret_access_key": {
-				Type:      schema.TypeString,
-				Computed:  true,
-				Sensitive: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "Server-assigned credential secret for the OpenVPN client. Returned on create and on each rotation; the API does not allow re-fetching this value later, so the terraform state is the only durable copy.",
 			},
 			"type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Tunnel type (always `openvpn` server-side).",
 			},
 			"created_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was created (server-assigned).",
 			},
 			"updated_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was last updated server-side.",
 			},
 		},
 		Importer: &schema.ResourceImporter{
