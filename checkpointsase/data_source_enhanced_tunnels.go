@@ -18,6 +18,9 @@ dataSourceEnhancedTunnels Query all tunnels in an enhanced network
 */
 func dataSourceEnhancedTunnels() *schema.Resource {
 	return &schema.Resource{
+		Description: "List all IPsec tunnels (static and dynamic) attached to a single " +
+			"`checkpointsase_enhanced_network`. Returns paginated results with " +
+			"`items_total`, `page`, and `total_page` metadata.",
 		ReadContext: dataSourceEnhancedTunnelsRead,
 		Schema: map[string]*schema.Schema{
 			"network_id": {

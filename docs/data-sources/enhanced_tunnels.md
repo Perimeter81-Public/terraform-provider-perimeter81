@@ -3,12 +3,12 @@
 page_title: "checkpointsase_enhanced_tunnels Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all IPsec tunnels (static and dynamic) attached to a single checkpointsase_enhanced_network. Returns paginated results with items_total, page, and total_page metadata.
 ---
 
 # checkpointsase_enhanced_tunnels (Data Source)
 
-
+List all IPsec tunnels (static and dynamic) attached to a single `checkpointsase_enhanced_network`. Returns paginated results with `items_total`, `page`, and `total_page` metadata.
 
 ## Example Usage
 
