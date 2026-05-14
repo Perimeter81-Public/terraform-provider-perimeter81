@@ -3,12 +3,12 @@
 page_title: "checkpointsase_status Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Health check of the Check Point SASE Public API. Returns Ok when the API is reachable. Useful as a connectivity probe in CI/CD or terraform module pre-checks.
 ---
 
 # checkpointsase_status (Data Source)
 
-
+Health check of the Check Point SASE Public API. Returns `Ok` when the API is reachable. Useful as a connectivity probe in CI/CD or terraform module pre-checks.
 
 ## Example Usage
 

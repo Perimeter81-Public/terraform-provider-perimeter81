@@ -18,6 +18,9 @@ dataSourceStatus Query the Check Point SASE API status
 */
 func dataSourceStatus() *schema.Resource {
 	return &schema.Resource{
+		Description: "Health check of the Check Point SASE Public API. Returns " +
+			"`Ok` when the API is reachable. Useful as a connectivity probe in " +
+			"CI/CD or terraform module pre-checks.",
 		ReadContext: dataSourceStatusRead,
 		Schema: map[string]*schema.Schema{
 			"status": {
