@@ -18,6 +18,10 @@ dataSourceApplications Query all Applications
 */
 func dataSourceApplications() *schema.Resource {
 	return &schema.Resource{
+		Description: "List all applications in Check Point SASE. Returns " +
+			"every published application across all networks the API key " +
+			"has access to. Use `checkpointsase_application` to manage " +
+			"individual application resources.",
 		ReadContext: dataSourceApplicationsRead,
 		Schema: map[string]*schema.Schema{
 			"applications": {
@@ -39,7 +43,7 @@ func dataSourceApplications() *schema.Resource {
 						"type": {
 							Type:        schema.TypeString,
 							Computed:    true,
-							Description: "The type of the application (e.g., 'http', 'https', 'rdp').",
+							Description: "The type of the application. Values: `http`, `https`, `rdp`, `ssh`, or `vnc` (note: legacy `ssh` and `vnc` apps may exist in the response but cannot be created via the v2.3 Public API).",
 						},
 						"network_id": {
 							Type:        schema.TypeString,

@@ -3,12 +3,12 @@
 page_title: "checkpointsase_applications Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all applications in Check Point SASE. Returns every published application across all networks the API key has access to. Use checkpointsase_application to manage individual application resources.
 ---
 
 # checkpointsase_applications (Data Source)
 
-
+List all applications in Check Point SASE. Returns every published application across all networks the API key has access to. Use `checkpointsase_application` to manage individual application resources.
 
 ## Example Usage
 
