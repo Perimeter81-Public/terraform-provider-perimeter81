@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 /*
@@ -19,61 +20,83 @@ resourceWireguard Setup the Wireguard tunnel Resource CRUD operations
 */
 func resourceWireguard() *schema.Resource {
 	return &schema.Resource{
+		Description: "Manages a WireGuard client tunnel attached to one gateway of a " +
+			"`checkpointsase_network`. After creation, the server returns `vault` and " +
+			"`request_config_token` — opaque values used to retrieve the WireGuard " +
+			"client configuration via the SASE management console. " +
+			"**`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are " +
+			"immutable** — changing any of them forces resource replacement. Only " +
+			"`remote_endpoint` and `remote_subnets` are updatable in place.",
 		CreateContext: resourceWireguardCreate,
 		ReadContext:   resourceWireguardRead,
 		UpdateContext: resourceWireguardUpdate,
 		DeleteContext: resourceWireguardDelete,
 		Schema: map[string]*schema.Schema{
 			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp of the last update to this resource.",
 			},
 			"remote_endpoint": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Remote peer's public IP address (IPv4 or IPv6).",
+				ValidateFunc: validation.IsIPAddress,
 			},
 			"region_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.",
 			},
 			"network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the standard network the tunnel belongs to.",
 			},
 			"gateway_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the SASE gateway that terminates this tunnel locally.",
 			},
 			"tunnel_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Display name for the WireGuard tunnel.",
 			},
 			"created_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was created (server-assigned).",
 			},
 			"vault": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Server-assigned opaque identifier for the tunnel's config storage. Used together with `request_config_token` to retrieve the WireGuard client config from the SASE management console.",
 			},
 			"request_config_token": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Server-assigned token for retrieving the WireGuard client configuration. Pair with `vault` to fetch the config blob.",
 			},
 			"updated_at": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Timestamp when the tunnel was last updated server-side.",
 			},
 			"remote_subnets": {
-				Type:     schema.TypeList,
-				Required: true,
+				Type:        schema.TypeList,
+				Required:    true,
+				Description: "List of remote-side subnet CIDR blocks reachable through this tunnel. At least one is required; duplicates are rejected server-side.",
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type:         schema.TypeString,
+					ValidateFunc: validation.IsCIDR,
 				},
 			},
 		},

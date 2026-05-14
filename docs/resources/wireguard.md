@@ -3,12 +3,12 @@
 page_title: "checkpointsase_wireguard Resource - checkpointsase"
 subcategory: ""
 description: |-
-  
+  Manages a WireGuard client tunnel attached to one gateway of a checkpointsase_network. After creation, the server returns vault and request_config_token — opaque values used to retrieve the WireGuard client configuration via the SASE management console. network_id, region_id, gateway_id, and tunnel_name are immutable — changing any of them forces resource replacement. Only remote_endpoint and remote_subnets are updatable in place.
 ---
 
 # checkpointsase_wireguard (Resource)
 
-
+Manages a WireGuard client tunnel attached to one gateway of a `checkpointsase_network`. After creation, the server returns `vault` and `request_config_token` — opaque values used to retrieve the WireGuard client configuration via the SASE management console. **`network_id`, `region_id`, `gateway_id`, and `tunnel_name` are immutable** — changing any of them forces resource replacement. Only `remote_endpoint` and `remote_subnets` are updatable in place.
 
 ## Example Usage
 
@@ -30,24 +30,24 @@ resource "checkpointsase_wireguard" "example" {
 
 ### Required
 
-- `gateway_id` (String)
-- `network_id` (String)
-- `region_id` (String)
-- `remote_endpoint` (String)
-- `remote_subnets` (List of String)
-- `tunnel_name` (String)
+- `gateway_id` (String) The ID of the SASE gateway that terminates this tunnel locally.
+- `network_id` (String) The ID of the standard network the tunnel belongs to.
+- `region_id` (String) The ID of the network's region. Returned by `checkpointsase_network.region.region_id`.
+- `remote_endpoint` (String) Remote peer's public IP address (IPv4 or IPv6).
+- `remote_subnets` (List of String) List of remote-side subnet CIDR blocks reachable through this tunnel. At least one is required; duplicates are rejected server-side.
+- `tunnel_name` (String) Display name for the WireGuard tunnel.
 
 ### Optional
 
-- `created_at` (String)
-- `last_updated` (String)
-- `request_config_token` (String)
-- `updated_at` (String)
-- `vault` (String)
+- `created_at` (String) Timestamp when the tunnel was created (server-assigned).
+- `last_updated` (String) Timestamp of the last update to this resource.
+- `updated_at` (String) Timestamp when the tunnel was last updated server-side.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `request_config_token` (String) Server-assigned token for retrieving the WireGuard client configuration. Pair with `vault` to fetch the config blob.
+- `vault` (String) Server-assigned opaque identifier for the tunnel's config storage. Used together with `request_config_token` to retrieve the WireGuard client config from the SASE management console.
 
 ## Import
 
