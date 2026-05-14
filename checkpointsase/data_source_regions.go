@@ -18,40 +18,52 @@ dataSourceRegions Query all Regions
 */
 func dataSourceRegions() *schema.Resource {
 	return &schema.Resource{
+		Description: "List the cloud regions available for deploying " +
+			"`checkpointsase_network` (standard) resources. Each entry provides " +
+			"the `id` to pass as `cpregion_id` when declaring a network's region. " +
+			"For enhanced networks use `checkpointsase_enhanced_regions` instead.",
 		ReadContext: dataSourceRegionsRead,
 		Schema: map[string]*schema.Schema{
 			"regions": {
-				Type:     schema.TypeList,
-				Computed: true,
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "The list of available Check Point SASE cloud regions for standard networks.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"object_id": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Server-side object identifier (internal).",
 						},
 						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The region ID. Used as `cpregion_id` on `checkpointsase_network.region`.",
 						},
 						"country_code": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "ISO 3166-1 alpha-2 country code for the region.",
 						},
 						"continent_code": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "ISO 3166-1 alpha-2 continent code for the region.",
 						},
 						"display_name": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Human-readable region name.",
 						},
 						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Internal name of the region.",
 						},
 						"class_name": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Server-side class identifier (internal).",
 						},
 					},
 				},

@@ -3,12 +3,12 @@
 page_title: "checkpointsase_regions Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List the cloud regions available for deploying checkpointsase_network (standard) resources. Each entry provides the id to pass as cpregion_id when declaring a network's region. For enhanced networks use checkpointsase_enhanced_regions instead.
 ---
 
 # checkpointsase_regions (Data Source)
 
-
+List the cloud regions available for deploying `checkpointsase_network` (standard) resources. Each entry provides the `id` to pass as `cpregion_id` when declaring a network's region. For enhanced networks use `checkpointsase_enhanced_regions` instead.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ data "checkpointsase_regions" "all" {}
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `regions` (List of Object) (see [below for nested schema](#nestedatt--regions))
+- `regions` (List of Object) The list of available Check Point SASE cloud regions for standard networks. (see [below for nested schema](#nestedatt--regions))
 
 <a id="nestedatt--regions"></a>
 ### Nested Schema for `regions`
