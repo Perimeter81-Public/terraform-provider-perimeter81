@@ -18,6 +18,14 @@ dataSourceNetworks Query all Networks
 */
 func dataSourceNetworks() *schema.Resource {
 	return &schema.Resource{
+		Description: "List all standard networks in Check Point SASE. " +
+			"This data source is a backwards-compatibility alias of " +
+			"`checkpointsase_standard_networks` that returns a deeper-nested " +
+			"shape including per-region `instances` and `tunnels`. New code " +
+			"should prefer `checkpointsase_standard_networks` for cleaner output.",
+		DeprecationMessage: "Use `checkpointsase_standard_networks` instead. " +
+			"This data source is retained for backwards compatibility and " +
+			"will be removed in a future major release.",
 		ReadContext: dataSourceNetworksRead,
 		Schema: map[string]*schema.Schema{
 			"networks": {

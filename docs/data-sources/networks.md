@@ -3,12 +3,12 @@
 page_title: "checkpointsase_networks Data Source - checkpointsase"
 subcategory: ""
 description: |-
-  
+  List all standard networks in Check Point SASE. This data source is a backwards-compatibility alias of checkpointsase_standard_networks that returns a deeper-nested shape including per-region instances and tunnels. New code should prefer checkpointsase_standard_networks for cleaner output.
 ---
 
 # checkpointsase_networks (Data Source)
 
-
+List all standard networks in Check Point SASE. This data source is a backwards-compatibility alias of `checkpointsase_standard_networks` that returns a deeper-nested shape including per-region `instances` and `tunnels`. New code should prefer `checkpointsase_standard_networks` for cleaner output.
 
 ## Example Usage
 
