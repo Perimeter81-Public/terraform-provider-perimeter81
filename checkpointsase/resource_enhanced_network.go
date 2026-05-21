@@ -228,6 +228,48 @@ func resourceEnhancedNetworkRead(ctx context.Context, d *schema.ResourceData, m 
 		return appendErrorDiags(diags, "Unable to set Enhanced Network tags", err)
 	}
 
+	// BUG-19 fix: GetEnhancedNetwork deliberately excludes regions on the
+	// public-api side (EnhancedNetworkDto has `@Exclude() regions`). The
+	// regions live behind a separate endpoint exposed by ListEnhancedRegions.
+	// Without this call the `region` block stays at zero values forever —
+	// in particular `region[].id` (a Computed field) is never set, which
+	// breaks downstream resources that need to reference it.
+	//
+	// Note: ListEnhancedRegions does not return `harmony_sase_region_id`
+	// (the swagger's EnhancedRegion schema has `id` / `name` / `dns` /
+	// `network` / `scaleUnits` / `attributes` but not the harmony region
+	// reference). We preserve the user-supplied harmony_sase_region_id
+	// from the existing state positionally — this is reliable for the
+	// common single-region case and acceptable for multi-region in
+	// practice (API ordering tends to be stable).
+	regions, _, err := client.EnhancedRegionsAPI.ListEnhancedRegions(ctx, networkId).Execute()
+	if err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to fetch enhanced network regions", err)
+	}
+	existingRegions, _ := d.Get("region").([]interface{})
+	newRegions := make([]interface{}, 0, len(regions))
+	for i, apiRegion := range regions {
+		entry := map[string]interface{}{
+			"id":          apiRegion.Id,
+			"scale_units": int(apiRegion.ScaleUnits),
+			"idle":        false,
+		}
+		if apiRegion.Attributes.RunningMode != nil {
+			entry["idle"] = apiRegion.Attributes.RunningMode.Idle
+		}
+		if i < len(existingRegions) {
+			if existing, ok := existingRegions[i].(map[string]interface{}); ok {
+				entry["harmony_sase_region_id"] = existing["harmony_sase_region_id"]
+			}
+		}
+		newRegions = append(newRegions, entry)
+	}
+	if err := d.Set("region", newRegions); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set enhanced network region", err)
+	}
+
 	return diags
 }
 

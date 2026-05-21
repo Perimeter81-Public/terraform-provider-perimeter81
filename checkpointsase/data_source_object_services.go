@@ -93,16 +93,25 @@ func dataSourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m
 		ctx = context.Background()
 	}
 
-	// call the api and check if there is an error
-	objectServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
+	// BUG-17 workaround: use the raw GET instead of the SDK so the protocols
+	// block populates correctly. See raw_client.go for details.
+	rawServices, err := fetchRawObjectServices(ctx, client)
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to get object services", err)
 	}
 
-	// flatten the data so it fit the terraform schema and set the terraform resource data
-	newObjectServices := flattenObjectServicesData(objectServices.Data)
-	if err := d.Set("object_services", newObjectServices); err != nil {
+	out := make([]interface{}, 0, len(rawServices))
+	for _, svc := range rawServices {
+		entry := map[string]interface{}{
+			"id":          svc.Id,
+			"name":        svc.Name,
+			"description": svc.Description,
+			"protocols":   rawProtocolsToTerraform(svc.Protocols),
+		}
+		out = append(out, entry)
+	}
+	if err := d.Set("object_services", out); err != nil {
 		d.Partial(true)
 		return diag.FromErr(err)
 	}

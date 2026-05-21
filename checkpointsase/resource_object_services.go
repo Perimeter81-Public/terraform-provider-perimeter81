@@ -117,24 +117,39 @@ func resourceObjectServicesCreate(ctx context.Context, d *schema.ResourceData, m
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	// get the object services data from the terraform resource data and flatten what need to be flattened for the api
+	// BUG-17 workaround: bypass the SDK's broken protocols serialization
+	// (it never sets the `protocol` field, so the server saves the service
+	// with empty protocols). Send the flat JSON shape directly.
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
+	rawProtocols := hclProtocolsToRaw(d.Get("protocols").([]interface{}))
 
-	CreateObjectsServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
-		Name:        name,
-		Description: &description,
-		Protocols:   protocolsPayload,
-	}
-	// create the Object Services and check for errors
-	newObjectServices, _, err := client.ObjectsServicesAPI.PostObjectsServices(ctx).ObjectsServicesRequestObj(CreateObjectsServicesPayload).Execute()
+	id, err := createRawObjectService(ctx, client, name, description, rawProtocols)
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create Object Services", err)
 	}
+	if id == "" {
+		// Server returned an unexpected (or 204-style) shape — fall back to
+		// listing and finding by name. Best-effort.
+		rawList, listErr := fetchRawObjectServices(ctx, client)
+		if listErr != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Created Object Service but couldn't recover its id", listErr)
+		}
+		for _, svc := range rawList {
+			if svc.Name == name {
+				id = svc.Id
+				break
+			}
+		}
+	}
+	if id == "" {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Created Object Service but server response had no id", fmt.Errorf("empty id"))
+	}
 
-	d.SetId(newObjectServices.GetId())
+	d.SetId(id)
 	return resourceObjectServicesRead(ctx, d, m)
 }
 
@@ -168,9 +183,27 @@ func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m i
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set object services description", err)
 	}
-	if err := d.Set("protocols", flattenObjectServicesProtocols(currentObjectServices.Protocols)); err != nil {
+	// BUG-17 workaround: the SDK's Protocols field cannot be unmarshalled
+	// from the flat wire shape (swagger declares a nested oneOf/anyOf that
+	// doesn't match the actual public-api response). Fetch raw JSON and
+	// extract the protocols block ourselves. See raw_client.go for details.
+	rawServices, rawErr := fetchRawObjectServices(ctx, client)
+	if rawErr != nil {
 		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set object services protocol data", err)
+		return appendErrorDiags(diags, "Unable to fetch raw object services for protocols (BUG-17 workaround)", rawErr)
+	}
+	var rawMatch *rawObjectService
+	for i := range rawServices {
+		if rawServices[i].Id == d.Id() {
+			rawMatch = &rawServices[i]
+			break
+		}
+	}
+	if rawMatch != nil {
+		if err := d.Set("protocols", rawProtocolsToTerraform(rawMatch.Protocols)); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set object services protocol data", err)
+		}
 	}
 
 	return diags
@@ -191,22 +224,13 @@ func resourceObjectServicesUpdate(ctx context.Context, d *schema.ResourceData, m
 	ctx = context.Background()
 
 	if d.HasChanges("name", "description", "protocols") {
-
-		// get the object services data from the terraform resource data and flatten what need to be flattened for the api
+		// BUG-17 workaround: same flat-shape PUT as the CREATE workaround.
 		objectServicesId := d.Id()
 		name := d.Get("name").(string)
 		description := d.Get("description").(string)
+		rawProtocols := hclProtocolsToRaw(d.Get("protocols").([]interface{}))
 
-		// prepare the object services data for the api service
-		protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
-		updateObjectServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
-			Name:        name,
-			Description: &description,
-			Protocols:   protocolsPayload,
-		}
-		//update the object services and check for errors
-		_, _, err := client.ObjectsServicesAPI.PutObjectsServices(ctx, objectServicesId).ObjectsServicesRequestObj(updateObjectServicesPayload).Execute()
-		if err != nil {
+		if err := updateRawObjectService(ctx, client, objectServicesId, name, description, rawProtocols); err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update object services", err)
 		}

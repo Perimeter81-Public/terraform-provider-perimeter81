@@ -138,25 +138,23 @@ func resourceFirewallPolicyCreate(ctx context.Context, d *schema.ResourceData, m
 
 	networkId := d.Get("network_id").(string)
 
-	// Read existing policy to get its ID
-	policyData, _, err := client.FirewallPolicyAPI.GetFirewallPolicy(ctx, networkId).Execute()
-	if err != nil {
+	// Existence check only: there is no CREATE endpoint for firewall policies
+	// — a policy is created implicitly per network. We verify the policy is
+	// reachable and adopt it by setting the resource ID, then push the HCL
+	// configuration via Update. BUG-18: an earlier version of this Create
+	// also copied the server's current `enabled`/`allowed` values into the
+	// resource data via `d.Set`. That clobbered the HCL values for the
+	// subsequent Update (terraform-plugin-sdk's d.Get prefers a recent
+	// d.Set over the diff/config), so Update pushed the server's existing
+	// values back instead of the user's configuration, and the first apply
+	// always left a `false → true` drift that only resolved on the second
+	// apply. The fix is simply not to call those d.Set calls here.
+	if _, _, err := client.FirewallPolicyAPI.GetFirewallPolicy(ctx, networkId).Execute(); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read Firewall Policy for adoption", err)
 	}
 
-	// Use the network_id as the resource ID (policy ID is stored separately)
 	d.SetId(networkId)
-	if err := d.Set("enabled", policyData.Enabled); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set Firewall Policy enabled", err)
-	}
-	if err := d.Set("allowed", policyData.Allowed); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set Firewall Policy allowed", err)
-	}
-
-	// Now apply the desired configuration
 	return resourceFirewallPolicyUpdate(ctx, d, m)
 }
 
