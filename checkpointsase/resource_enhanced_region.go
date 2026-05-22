@@ -3,6 +3,7 @@ package checkpointsase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
@@ -64,14 +65,29 @@ func resourceEnhancedRegion() *schema.Resource {
 }
 
 /*
-resourceEnhancedRegionImportState Import an enhanced region by its composite ID (networkId/regionId).
-  - @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-  - @param d *schema.ResourceData - the terraform resource data
-  - @param m interface{} - the terraform meta data that contains the client
+resourceEnhancedRegionImportState Import an enhanced region by its composite
+ID `<network_id>-<region_id>`. The Read handler needs both the network id (for
+the URL path) and the region id (as d.Id()); terraform's import flow only seeds
+d.Id() with whatever the user passes, so the importer must split the composite
+itself before delegating to Read. BUG-22: the original implementation skipped
+this split entirely and called Read with d.Get("network_id") == "" — every
+import attempt 404'd.
 
-@return []*schema.ResourceData, error
+The `-` separator mirrors the pattern already used by resourceGatewayImportState
+(composite `<network_id>-<region_id>` per BUG-15 fix). Enhanced network and
+region IDs are base62-ish 10-char strings that don't contain `-`, so the split
+is unambiguous.
 */
 func resourceEnhancedRegionImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	ids := strings.SplitN(d.Id(), "-", 2)
+	if len(ids) != 2 || ids[0] == "" || ids[1] == "" {
+		return nil, fmt.Errorf("could not import enhanced_region: expected composite ID in the form <network_id>-<region_id>, got %q", d.Id())
+	}
+	if err := d.Set("network_id", ids[0]); err != nil {
+		return nil, fmt.Errorf("could not import enhanced_region: failed to set network_id: %w", err)
+	}
+	d.SetId(ids[1])
+
 	diagnostics := resourceEnhancedRegionRead(ctx, d, m)
 	if diagnostics.HasError() {
 		for _, diagnostic := range diagnostics {
@@ -80,6 +96,34 @@ func resourceEnhancedRegionImportState(ctx context.Context, d *schema.ResourceDa
 			}
 		}
 	}
+
+	// Recover harmony_sase_region_id by matching the enhanced region's name
+	// against the global Harmony SASE region list. The GET endpoint that Read
+	// uses (/v2.3/networks/enhanced/{networkId}/regions/{regionId}) does NOT
+	// return harmony_sase_region_id (the swagger's EnhancedRegion schema
+	// lacks it), but it does return the region `name` which is identical to
+	// the HarmonySaseRegion `name`. Since harmony_sase_region_id is Required
+	// + ForceNew, leaving state empty would cause the next plan to schedule
+	// a destroy+recreate. This name lookup is restricted to the import path
+	// (not done on every Read) so normal plans don't pay the extra round trip.
+	client := m.(*perimeter81Sdk.APIClient)
+	regionData, _, err := client.EnhancedRegionsAPI.GetEnhancedRegion(ctx, ids[0], ids[1]).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("could not import enhanced region: failed to read region after Read: %w", err)
+	}
+	harmonyRegions, _, err := client.EnhancedRegionsAPI.EnhancedNetworksControllerV2GetRegions(ctx).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("could not import enhanced region: failed to list harmony regions for name lookup: %w", err)
+	}
+	for _, hr := range harmonyRegions {
+		if hr.Name == regionData.Name {
+			if err := d.Set("harmony_sase_region_id", hr.Id); err != nil {
+				return nil, fmt.Errorf("could not import enhanced region: failed to set harmony_sase_region_id: %w", err)
+			}
+			break
+		}
+	}
+
 	return []*schema.ResourceData{d}, nil
 }
 
