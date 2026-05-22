@@ -248,8 +248,20 @@ func resourceEnhancedNetworkRead(ctx context.Context, d *schema.ResourceData, m 
 		return appendErrorDiags(diags, "Unable to fetch enhanced network regions", err)
 	}
 	existingRegions, _ := d.Get("region").([]interface{})
-	newRegions := make([]interface{}, 0, len(regions))
-	for i, apiRegion := range regions {
+	// Only populate as many regions as the existing state tracks. Additional
+	// regions on the API side (added out-of-band via the
+	// `checkpointsase_enhanced_region` resource) are managed by their own
+	// resources and must NOT appear in enhanced_network state — otherwise
+	// the user sees perpetual drift on enhanced_network for regions they
+	// didn't declare here. Capping at min(api,state) also handles the
+	// reverse case (a region was deleted externally) without panicking.
+	cap := len(regions)
+	if len(existingRegions) < cap {
+		cap = len(existingRegions)
+	}
+	newRegions := make([]interface{}, 0, cap)
+	for i := 0; i < cap; i++ {
+		apiRegion := regions[i]
 		entry := map[string]interface{}{
 			"id":          apiRegion.Id,
 			"scale_units": int(apiRegion.ScaleUnits),
@@ -258,10 +270,8 @@ func resourceEnhancedNetworkRead(ctx context.Context, d *schema.ResourceData, m 
 		if apiRegion.Attributes.RunningMode != nil {
 			entry["idle"] = apiRegion.Attributes.RunningMode.Idle
 		}
-		if i < len(existingRegions) {
-			if existing, ok := existingRegions[i].(map[string]interface{}); ok {
-				entry["harmony_sase_region_id"] = existing["harmony_sase_region_id"]
-			}
+		if existing, ok := existingRegions[i].(map[string]interface{}); ok {
+			entry["harmony_sase_region_id"] = existing["harmony_sase_region_id"]
 		}
 		newRegions = append(newRegions, entry)
 	}
