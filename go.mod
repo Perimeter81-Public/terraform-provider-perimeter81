@@ -8,11 +8,6 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
 )
 
-// Local SDK override for P81-123406 SDK fixes. The vendored SDK at
-// ../perimeter-81-client-sdk carries unreleased BUG-17/23/24 fixes.
-// Remove this replace directive once v2.3.0 is re-tagged on origin.
-replace github.com/Perimeter81-Public/perimeter-81-client-sdk/v2 => ../perimeter-81-client-sdk
-
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
