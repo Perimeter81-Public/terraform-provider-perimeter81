@@ -162,35 +162,21 @@ resourceObjectServicesRead Read a Object Services
 @return diag.Diagnostics
 */
 func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	// get the object services and check for errors
-	objectsServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
-	if err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to find Network", err)
-	}
-	currentObjectServices := getCurrentObjectServicesInArray(objectsServices, d.Get("name").(string))
-
-	if err := d.Set("name", currentObjectServices.Name); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set object services name", err)
-	}
-	if err := d.Set("description", currentObjectServices.Description); err != nil {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to set object services description", err)
-	}
-	// BUG-17 workaround: the SDK's Protocols field cannot be unmarshalled
-	// from the flat wire shape (swagger declares a nested oneOf/anyOf that
-	// doesn't match the actual public-api response). Fetch raw JSON and
-	// extract the protocols block ourselves. See raw_client.go for details.
+	// BUG-21 fix (and BUG-17 protocols workaround in the same path): look up
+	// the service by id from the raw GET. The previous implementation looked
+	// up by `d.Get("name")`, which (1) panicked on `terraform import` because
+	// the import handler only seeds `d.Id()`, and (2) silently misbehaved if
+	// the service was renamed server-side. Looking up by id also lets us
+	// drop the broken SDK call (which couldn't deserialize protocols) — the
+	// raw fetch already returns id/name/description/protocols.
 	rawServices, rawErr := fetchRawObjectServices(ctx, client)
 	if rawErr != nil {
 		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to fetch raw object services for protocols (BUG-17 workaround)", rawErr)
+		return appendErrorDiags(diags, "Unable to fetch object services", rawErr)
 	}
 	var rawMatch *rawObjectService
 	for i := range rawServices {
@@ -199,11 +185,23 @@ func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m i
 			break
 		}
 	}
-	if rawMatch != nil {
-		if err := d.Set("protocols", rawProtocolsToTerraform(rawMatch.Protocols)); err != nil {
-			d.Partial(true)
-			return appendErrorDiags(diags, "Unable to set object services protocol data", err)
-		}
+	if rawMatch == nil {
+		// Resource gone server-side — let terraform schedule a recreate.
+		d.SetId("")
+		return diags
+	}
+
+	if err := d.Set("name", rawMatch.Name); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set object services name", err)
+	}
+	if err := d.Set("description", rawMatch.Description); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set object services description", err)
+	}
+	if err := d.Set("protocols", rawProtocolsToTerraform(rawMatch.Protocols)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set object services protocol data", err)
 	}
 
 	return diags
