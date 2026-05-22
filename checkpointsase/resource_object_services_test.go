@@ -97,23 +97,11 @@ func testAccCheckObjectServicesAttributes(objectServices *perimeter81Sdk.Objects
 			return fmt.Errorf("got no protocols; want at least one")
 		}
 
-		// Extract value_type and value from the first protocol's union type
+		// P81-123406 BUG-17 SDK fix: protocols entries are flat (no nested
+		// oneOf/anyOf wrapper), so the fields are read directly.
 		proto := objectServices.Protocols[0]
-		var gotValueType string
-		var gotValue []int32
-		if proto.ObjectServiceProtocolTCPUDP != nil {
-			tcpudp := proto.ObjectServiceProtocolTCPUDP
-			if tcpudp.ObjectServiceProtocolList != nil {
-				gotValueType = tcpudp.ObjectServiceProtocolList.ValueType
-				gotValue = tcpudp.ObjectServiceProtocolList.Value
-			} else if tcpudp.ObjectServiceProtocolRange != nil {
-				gotValueType = tcpudp.ObjectServiceProtocolRange.ValueType
-				gotValue = tcpudp.ObjectServiceProtocolRange.Value
-			} else if tcpudp.ObjectServiceProtocolSingle != nil {
-				gotValueType = tcpudp.ObjectServiceProtocolSingle.ValueType
-				gotValue = tcpudp.ObjectServiceProtocolSingle.Value
-			}
-		}
+		gotValueType := proto.ValueType
+		gotValue := proto.Value
 
 		if gotValueType != want.ValueType {
 			return fmt.Errorf("got value_type %q; want %q", gotValueType, want.ValueType)

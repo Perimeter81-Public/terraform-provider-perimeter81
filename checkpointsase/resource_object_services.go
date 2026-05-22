@@ -117,39 +117,22 @@ func resourceObjectServicesCreate(ctx context.Context, d *schema.ResourceData, m
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	// BUG-17 workaround: bypass the SDK's broken protocols serialization
-	// (it never sets the `protocol` field, so the server saves the service
-	// with empty protocols). Send the flat JSON shape directly.
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	rawProtocols := hclProtocolsToRaw(d.Get("protocols").([]interface{}))
+	protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
 
-	id, err := createRawObjectService(ctx, client, name, description, rawProtocols)
+	createObjectsServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
+		Name:        name,
+		Description: &description,
+		Protocols:   protocolsPayload,
+	}
+	newObjectServices, _, err := client.ObjectsServicesAPI.PostObjectsServices(ctx).ObjectsServicesRequestObj(createObjectsServicesPayload).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to create Object Services", err)
 	}
-	if id == "" {
-		// Server returned an unexpected (or 204-style) shape — fall back to
-		// listing and finding by name. Best-effort.
-		rawList, listErr := fetchRawObjectServices(ctx, client)
-		if listErr != nil {
-			d.Partial(true)
-			return appendErrorDiags(diags, "Created Object Service but couldn't recover its id", listErr)
-		}
-		for _, svc := range rawList {
-			if svc.Name == name {
-				id = svc.Id
-				break
-			}
-		}
-	}
-	if id == "" {
-		d.Partial(true)
-		return appendErrorDiags(diags, "Created Object Service but server response had no id", fmt.Errorf("empty id"))
-	}
 
-	d.SetId(id)
+	d.SetId(newObjectServices.GetId())
 	return resourceObjectServicesRead(ctx, d, m)
 }
 
@@ -166,40 +149,38 @@ func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m i
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	// BUG-21 fix (and BUG-17 protocols workaround in the same path): look up
-	// the service by id from the raw GET. The previous implementation looked
-	// up by `d.Get("name")`, which (1) panicked on `terraform import` because
-	// the import handler only seeds `d.Id()`, and (2) silently misbehaved if
-	// the service was renamed server-side. Looking up by id also lets us
-	// drop the broken SDK call (which couldn't deserialize protocols) — the
-	// raw fetch already returns id/name/description/protocols.
-	rawServices, rawErr := fetchRawObjectServices(ctx, client)
-	if rawErr != nil {
+	// BUG-21 fix preserved: look up by id, not by name. On terraform import
+	// only d.Id() is seeded, so a by-name lookup would panic; a by-name
+	// lookup also misbehaves if the service is renamed server-side. The
+	// SDK list now returns the flat protocols structure (BUG-17 SDK fix in
+	// P81-123406) so a single GET + id match is all we need.
+	objectsServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
+	if err != nil {
 		d.Partial(true)
-		return appendErrorDiags(diags, "Unable to fetch object services", rawErr)
+		return appendErrorDiags(diags, "Unable to fetch object services", err)
 	}
-	var rawMatch *rawObjectService
-	for i := range rawServices {
-		if rawServices[i].Id == d.Id() {
-			rawMatch = &rawServices[i]
+	var match *perimeter81Sdk.ObjectsServicesResponseObj
+	for i := range objectsServices.Data {
+		if objectsServices.Data[i].Id != nil && *objectsServices.Data[i].Id == d.Id() {
+			match = &objectsServices.Data[i]
 			break
 		}
 	}
-	if rawMatch == nil {
+	if match == nil {
 		// Resource gone server-side — let terraform schedule a recreate.
 		d.SetId("")
 		return diags
 	}
 
-	if err := d.Set("name", rawMatch.Name); err != nil {
+	if err := d.Set("name", match.Name); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set object services name", err)
 	}
-	if err := d.Set("description", rawMatch.Description); err != nil {
+	if err := d.Set("description", match.Description); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set object services description", err)
 	}
-	if err := d.Set("protocols", rawProtocolsToTerraform(rawMatch.Protocols)); err != nil {
+	if err := d.Set("protocols", flattenObjectServicesProtocols(match.Protocols)); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set object services protocol data", err)
 	}
@@ -222,13 +203,16 @@ func resourceObjectServicesUpdate(ctx context.Context, d *schema.ResourceData, m
 	ctx = context.Background()
 
 	if d.HasChanges("name", "description", "protocols") {
-		// BUG-17 workaround: same flat-shape PUT as the CREATE workaround.
 		objectServicesId := d.Id()
 		name := d.Get("name").(string)
 		description := d.Get("description").(string)
-		rawProtocols := hclProtocolsToRaw(d.Get("protocols").([]interface{}))
-
-		if err := updateRawObjectService(ctx, client, objectServicesId, name, description, rawProtocols); err != nil {
+		protocolsPayload := flattenProtocolsData(d.Get("protocols").([]interface{}))
+		updateObjectServicesPayload := perimeter81Sdk.ObjectsServicesRequestObj{
+			Name:        name,
+			Description: &description,
+			Protocols:   protocolsPayload,
+		}
+		if _, _, err := client.ObjectsServicesAPI.PutObjectsServices(ctx, objectServicesId).ObjectsServicesRequestObj(updateObjectServicesPayload).Execute(); err != nil {
 			d.Partial(true)
 			return appendErrorDiags(diags, "Unable to update object services", err)
 		}

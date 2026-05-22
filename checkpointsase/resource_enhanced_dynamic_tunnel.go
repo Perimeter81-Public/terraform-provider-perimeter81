@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
@@ -54,6 +55,12 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 				Optional:    true,
 				Description: "Optional description for the dynamic tunnel.",
 			},
+			"left_asn": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				Description:  "The local (Check Point SASE) BGP autonomous-system number for this dynamic tunnel. Required by the API; valid ranges per IsValidASN.",
+				ValidateFunc: validation.IntBetween(1, 4294967295),
+			},
 			"tunnel": {
 				Type:        schema.TypeList,
 				Required:    true,
@@ -75,7 +82,7 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 							Type:        schema.TypeString,
 							Optional:    true,
 							Sensitive:   true,
-							Description: "Pre-shared key for tunnel authentication (8-64 characters). Required when auth_type is 'psk'.",
+							Description: "Pre-shared key for tunnel authentication. The public-api regex disallows hyphens; allowed characters are letters, digits, `.` and `_` (8-64 chars).",
 						},
 						"customer_root_ca": {
 							Type:        schema.TypeString,
@@ -90,17 +97,24 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 						"remote_id": {
 							Type:        schema.TypeString,
 							Optional:    true,
-							Description: "The remote gateway ID.",
+							Computed:    true,
+							Description: "The remote gateway ID. Server defaults to `remote_public_ip` when omitted.",
+						},
+						"remote_asn": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							Description:  "BGP autonomous-system number for the remote endpoint. Required by the API.",
+							ValidateFunc: validation.IntBetween(1, 4294967295),
 						},
 						"p81_gw_internal_ip": {
 							Type:        schema.TypeString,
-							Optional:    true,
-							Description: "The Check Point SASE gateway internal IP address.",
+							Required:    true,
+							Description: "The Check Point SASE gateway internal IP address (BGP peer local).",
 						},
 						"remote_gw_internal_ip": {
 							Type:        schema.TypeString,
-							Optional:    true,
-							Description: "The remote gateway internal IP address.",
+							Required:    true,
+							Description: "The remote gateway internal IP address (BGP peer remote).",
 						},
 					},
 				},
@@ -232,6 +246,19 @@ resourceEnhancedDynamicTunnelImportState Import an enhanced dynamic tunnel by it
 @return []*schema.ResourceData, error
 */
 func resourceEnhancedDynamicTunnelImportState(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	// Read needs both network_id (URL path) and tunnel_id (d.Id()) — the
+	// import handler must split the composite ID `<network_id>-<tunnel_id>`
+	// before delegating. Same pattern as static tunnel + gateway + enhanced
+	// region importers.
+	ids := strings.SplitN(d.Id(), "-", 2)
+	if len(ids) != 2 || ids[0] == "" || ids[1] == "" {
+		return nil, fmt.Errorf("could not import enhanced_dynamic_tunnel: expected composite ID in the form <network_id>-<tunnel_id>, got %q", d.Id())
+	}
+	if err := d.Set("network_id", ids[0]); err != nil {
+		return nil, fmt.Errorf("could not import enhanced_dynamic_tunnel: failed to set network_id: %w", err)
+	}
+	d.SetId(ids[1])
+
 	diagnostics := resourceEnhancedDynamicTunnelRead(ctx, d, m)
 	if diagnostics.HasError() {
 		for _, diagnostic := range diagnostics {
@@ -254,6 +281,10 @@ func flattenDynamicTunnelDetails(tunnelItems []interface{}) []perimeter81Sdk.Dyn
 		detail := perimeter81Sdk.DynamicTunnelDetails{
 			RegionID: regionId,
 		}
+		// remote_asn is Required + Int per schema; the SDK now stores it as
+		// *ASN where ASN is a named int32 (P81-123406 BUG-24 SDK fix).
+		asn := perimeter81Sdk.ASN(int32(tunnelMap["remote_asn"].(int)))
+		detail.RemoteASN = &asn
 		if v, ok := tunnelMap["auth_type"].(string); ok && v != "" {
 			detail.AuthType = &v
 		}
@@ -307,12 +338,16 @@ func resourceEnhancedDynamicTunnelCreate(ctx context.Context, d *schema.Resource
 	phase2 := flattenIPSecPhaseConfigV23(d.Get("phase2").([]interface{}))
 	tunnels := flattenDynamicTunnelDetails(d.Get("tunnel").([]interface{}))
 
+	// LeftASN is Required at the API (BUG-24). The SDK type is now a named
+	// int32 (P81-123406 SDK fix), so a direct cast carries the user's
+	// HCL value to the wire as a JSON integer.
+	leftASN := perimeter81Sdk.RemoteASN(int32(d.Get("left_asn").(int)))
 	sharedSettings := perimeter81Sdk.EnhancedIPSecSharedSettingsCreate{
 		P81GatewaySubnets:    p81GatewaySubnets,
 		RemoteGatewaySubnets: remoteGatewaySubnets,
 		PeakBandwidth:        &peakBandwidth,
 		Features:             perimeter81Sdk.NetworkFeaturesCreate{},
-		LeftASN:              perimeter81Sdk.RemoteASN{},
+		LeftASN:              leftASN,
 	}
 
 	advancedSettings := perimeter81Sdk.IPSecAdvancedSettingsV23{

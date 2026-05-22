@@ -356,12 +356,14 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 	remoteGWinernalIP1 := tunnel1Data["remote_gwinternal_ip"].(string)
 	remotePublicIP1 := tunnel1Data["remote_public_ip"].(string)
 	remoteId1 := tunnel1Data["remote_id"].(string)
+	remoteAsn1 := parseASNString(tunnel1Data["remote_asn"].(string))
 	gatewayId2 := tunnel2Data["gateway_id"].(string)
 	passphrase2 := tunnel2Data["passphrase"].(string)
 	p81GWinternalIP2 := tunnel2Data["p81_gwinternal_ip"].(string)
 	remoteGWinernalIP2 := tunnel2Data["remote_gwinternal_ip"].(string)
 	remotePublicIP2 := tunnel2Data["remote_public_ip"].(string)
 	remoteId2 := tunnel2Data["remote_id"].(string)
+	remoteAsn2 := parseASNString(tunnel2Data["remote_asn"].(string))
 	sharedSettingsData := d.Get("shared_settings").([]interface{})[0].(map[string]interface{})
 	p81GatewaySubnets := flattenStringsArrayData(sharedSettingsData["p81_gateway_subnets"].([]interface{}))
 	remoteGatewaySubnets := flattenStringsArrayData(sharedSettingsData["remote_gateway_subnets"].([]interface{}))
@@ -392,7 +394,7 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 			P81GWInternalIP:    p81GWinternalIP1,
 			RemoteGWInternalIP: remoteGWinernalIP1,
 			RemotePublicIP:     remotePublicIP1,
-			RemoteASN:          perimeter81Sdk.RemoteASN{},
+			RemoteASN:          remoteAsn1,
 			RemoteID:           remoteId1Value,
 		},
 		Tunnel2: perimeter81Sdk.IPSecRedundantTunnelPayload{
@@ -401,13 +403,19 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 			P81GWInternalIP:    p81GWinternalIP2,
 			RemoteGWInternalIP: remoteGWinernalIP2,
 			RemotePublicIP:     remotePublicIP2,
-			RemoteASN:          perimeter81Sdk.RemoteASN{},
+			RemoteASN:          remoteAsn2,
 			RemoteID:           remoteId2Value,
 		},
 		SharedSettings: perimeter81Sdk.IPSecSharedSettingsCreate{
 			P81GatewaySubnets:    p81GatewaySubnets,
 			RemoteGatewaySubnets: remoteGatewaySubnets,
-			P81ASN:               perimeter81Sdk.RemoteASN{},
+			// P81ASN is Required on the SDK type. The HCL schema for this
+			// resource doesn't expose a `p81_asn` field yet; the standard-
+			// network tunnels were previously blocked by BUG-09 (peakBandwidth
+			// rename), now resolved as part of BUG-23. Until the HCL surface
+			// is broadened, default to 0; the API will likely still reject
+			// until a real value is plumbed through.
+			P81ASN: perimeter81Sdk.RemoteASN(0),
 		},
 		AdvancedSettings: perimeter81Sdk.IPSecAdvancedSettings{
 			KeyExchange: keyExchange,

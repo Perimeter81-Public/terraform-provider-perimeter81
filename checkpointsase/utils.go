@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,15 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
+
+// parseASNString converts a user-supplied ASN string (e.g. "65010") to the
+// SDK's RemoteASN type. Invalid input returns 0; the API validator catches
+// out-of-range values. Used by resources whose HCL schema declares the ASN
+// as a string (historical reasons) — newer resources use TypeInt directly.
+func parseASNString(s string) perimeter81Sdk.RemoteASN {
+	n, _ := strconv.Atoi(strings.TrimSpace(s))
+	return perimeter81Sdk.RemoteASN(int32(n))
+}
 
 /*
 flattenStringsArrayData flatten string array data
@@ -115,27 +125,20 @@ flattenProtocolsData flatten Protocols data
 @return []perimeter81Sdk.ObjectsServicesProtocolRequestObj - the flattened protocols
 */
 func flattenProtocolsData(protocolItems []interface{}) []perimeter81Sdk.ObjectsServicesProtocolRequestObj {
-	if protocolItems != nil {
-		protocols := make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, len(protocolItems))
-
-		for i, protocolItem := range protocolItems {
-			valueType := protocolItem.(map[string]interface{})["value_type"].(string)
-			value := flattenIntsArrayData(protocolItem.(map[string]interface{})["value"].([]interface{}))
-			// Wrap as ObjectServiceProtocolList inside TCPUDP union
-			listProto := perimeter81Sdk.ObjectServiceProtocolList{
-				ValueType: valueType,
-				Value:     value,
-			}
-			tcpudp := perimeter81Sdk.ObjectServiceProtocolListAsObjectServiceProtocolTCPUDP(&listProto)
-			protocols[i] = perimeter81Sdk.ObjectsServicesProtocolRequestObj{
-				ObjectServiceProtocolTCPUDP: &tcpudp,
-			}
-		}
-
-		return protocols
+	if protocolItems == nil {
+		return make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, 0)
 	}
-
-	return make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, 0)
+	protocols := make([]perimeter81Sdk.ObjectsServicesProtocolRequestObj, len(protocolItems))
+	for i, protocolItem := range protocolItems {
+		m := protocolItem.(map[string]interface{})
+		entry := perimeter81Sdk.ObjectsServicesProtocolRequestObj{
+			Protocol:  m["protocol"].(string),
+			ValueType: m["value_type"].(string),
+			Value:     flattenIntsArrayData(m["value"].([]interface{})),
+		}
+		protocols[i] = entry
+	}
+	return protocols
 }
 
 // StandardNetworkRegionConfig holds the internal representation of a standard network region
@@ -277,40 +280,18 @@ flattenObjectServicesProtocols flatten object services protocols
 @return []interface{} - the flattened  network regions
 */
 func flattenObjectServicesProtocols(protocolItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj) []interface{} {
-	if protocolItems != nil {
-		protocols := make([]interface{}, len(protocolItems))
-
-		for i, protocolItem := range protocolItems {
-			protocol := make(map[string]interface{})
-			// Extract data from union type variants
-			if protocolItem.ObjectServiceProtocolTCPUDP != nil {
-				tcpudp := protocolItem.ObjectServiceProtocolTCPUDP
-				protocol["protocol"] = ""
-				if tcpudp.ObjectServiceProtocolList != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolList.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolList.Value
-				} else if tcpudp.ObjectServiceProtocolRange != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolRange.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolRange.Value
-				} else if tcpudp.ObjectServiceProtocolSingle != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolSingle.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolSingle.Value
-				} else {
-					protocol["value_type"] = ""
-					protocol["value"] = []int32{}
-				}
-			} else {
-				protocol["protocol"] = ""
-				protocol["value_type"] = ""
-				protocol["value"] = []int32{}
-			}
-			protocols[i] = protocol
-		}
-
-		return protocols
+	if protocolItems == nil {
+		return make([]interface{}, 0)
 	}
-
-	return make([]interface{}, 0)
+	protocols := make([]interface{}, len(protocolItems))
+	for i, protocolItem := range protocolItems {
+		protocols[i] = map[string]interface{}{
+			"protocol":   protocolItem.Protocol,
+			"value_type": protocolItem.ValueType,
+			"value":      protocolItem.Value,
+		}
+	}
+	return protocols
 }
 
 /*
@@ -1250,36 +1231,18 @@ flattenProtocolsDataSourceData flatten protocols data
 @return []interface{} - the flattened object services data
 */
 func flattenProtocolsDataSourceData(protocolItems []perimeter81Sdk.ObjectsServicesProtocolResponseObj) []interface{} {
-	if protocolItems != nil {
-		protocols := make([]interface{}, len(protocolItems))
-		for i, protocolItem := range protocolItems {
-			protocol := make(map[string]interface{})
-			if protocolItem.ObjectServiceProtocolTCPUDP != nil {
-				tcpudp := protocolItem.ObjectServiceProtocolTCPUDP
-				protocol["protocol"] = ""
-				if tcpudp.ObjectServiceProtocolList != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolList.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolList.Value
-				} else if tcpudp.ObjectServiceProtocolRange != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolRange.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolRange.Value
-				} else if tcpudp.ObjectServiceProtocolSingle != nil {
-					protocol["value_type"] = tcpudp.ObjectServiceProtocolSingle.ValueType
-					protocol["value"] = tcpudp.ObjectServiceProtocolSingle.Value
-				} else {
-					protocol["value_type"] = ""
-					protocol["value"] = []int32{}
-				}
-			} else {
-				protocol["protocol"] = ""
-				protocol["value_type"] = ""
-				protocol["value"] = []int32{}
-			}
-			protocols[i] = protocol
-		}
-		return protocols
+	if protocolItems == nil {
+		return make([]interface{}, 0)
 	}
-	return make([]interface{}, 0)
+	protocols := make([]interface{}, len(protocolItems))
+	for i, protocolItem := range protocolItems {
+		protocols[i] = map[string]interface{}{
+			"protocol":   protocolItem.Protocol,
+			"value_type": protocolItem.ValueType,
+			"value":      protocolItem.Value,
+		}
+	}
+	return protocols
 }
 
 /*

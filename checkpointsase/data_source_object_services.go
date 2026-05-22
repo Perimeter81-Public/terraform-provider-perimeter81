@@ -85,38 +85,25 @@ dataSourceObjectServicesRead Use the SDK to query all ObjectServices
 */
 
 func dataSourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-
-	// intialize the client and the context if not exists
 	var diags diag.Diagnostics
 	client := m.(*perimeter81Sdk.APIClient)
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	// BUG-17 workaround: use the raw GET instead of the SDK so the protocols
-	// block populates correctly. See raw_client.go for details.
-	rawServices, err := fetchRawObjectServices(ctx, client)
+	// SDK Protocols field now carries the flat wire shape (BUG-17 SDK fix in
+	// P81-123406), so the previous raw-HTTP workaround is gone.
+	objectServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to get object services", err)
 	}
 
-	out := make([]interface{}, 0, len(rawServices))
-	for _, svc := range rawServices {
-		entry := map[string]interface{}{
-			"id":          svc.Id,
-			"name":        svc.Name,
-			"description": svc.Description,
-			"protocols":   rawProtocolsToTerraform(svc.Protocols),
-		}
-		out = append(out, entry)
-	}
-	if err := d.Set("object_services", out); err != nil {
+	if err := d.Set("object_services", flattenObjectServicesData(objectServices.Data)); err != nil {
 		d.Partial(true)
 		return diag.FromErr(err)
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-
 	return diags
 }

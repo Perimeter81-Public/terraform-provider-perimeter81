@@ -3,24 +3,12 @@ package checkpointsase
 import (
 	"context"
 	"log"
-	"sync"
 
 	perimeter81Sdk "github.com/Perimeter81-Public/perimeter-81-client-sdk/v2"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-// providerAuthInfo holds the raw api_key + base_url the user configured the
-// provider with. Stashed at providerConfigure time so that BUG-17 workarounds
-// (and any future raw-HTTP fallbacks) can re-issue auth without needing an
-// unexported field accessor on the vendored SDK. Read-mostly; guarded by a
-// RWMutex so a future provider that supports HCL-driven reconfigure stays safe.
-var providerAuthInfo struct {
-	sync.RWMutex
-	apiKey  string
-	baseURL string
-}
 
 /*
 Provider Set up the provider schema
@@ -95,13 +83,6 @@ func providerConfigure(con context.Context, d *schema.ResourceData) (interface{}
 	// Get the api key and base url from the provider schema
 	apiKey := d.Get("api_key").(string)
 	baseUrl := d.Get("base_url").(string)
-
-	// Stash auth so raw-HTTP fallbacks (BUG-17 workaround in raw_client.go) can
-	// re-issue requests without needing access to the SDK's unexported cfg.
-	providerAuthInfo.Lock()
-	providerAuthInfo.apiKey = apiKey
-	providerAuthInfo.baseURL = baseUrl
-	providerAuthInfo.Unlock()
 
 	// Initialize the Check Point Check Point SASE client SDK
 	var client interface{}
