@@ -20,13 +20,13 @@ resource "checkpointsase_enhanced_static_tunnel" "example" {
 
   phase1 {
     auth                = ["sha256"]
-    encryption          = ["aes-cbc-256"]
+    encryption          = ["aes256"]
     key_exchange_method = ["modp2048"]
   }
 
   phase2 {
     auth                = ["sha256"]
-    encryption          = ["aes-cbc-256"]
+    encryption          = ["aes256"]
     key_exchange_method = ["modp2048"]
   }
 }

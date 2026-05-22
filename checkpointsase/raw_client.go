@@ -184,6 +184,62 @@ func updateRawObjectService(ctx context.Context, client *perimeter81Sdk.APIClien
 	return err
 }
 
+// postRawAsync issues an authenticated POST against an async public-api
+// endpoint (one that returns `{ statusUrl, ... }`). Used by BUG-23/24
+// workarounds where the SDK-generated Create types don't match the actual
+// wire shape (stale swagger). Returns the `statusUrl` so the caller can
+// poll via the existing `checkNetworkStatus` helper.
+func postRawAsync(ctx context.Context, client *perimeter81Sdk.APIClient, path string, body interface{}) (string, error) {
+	providerAuthInfo.RLock()
+	apiKey := providerAuthInfo.apiKey
+	baseURL := providerAuthInfo.baseURL
+	providerAuthInfo.RUnlock()
+
+	if apiKey == "" || baseURL == "" {
+		return "", fmt.Errorf("provider auth info not initialized")
+	}
+
+	token, err := client.GetBearerTokenFromApiKey(apiKey, baseURL)
+	if err != nil {
+		return "", fmt.Errorf("postRawAsync: bearer token exchange failed: %w", err)
+	}
+
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("postRawAsync: marshalling request body failed: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+path, bytes.NewReader(payload))
+	if err != nil {
+		return "", fmt.Errorf("postRawAsync: building POST %s request failed: %w", path, err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("postRawAsync: POST %s failed: %w", path, err)
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("postRawAsync: POST %s returned %d: %s", path, resp.StatusCode, string(respBody))
+	}
+
+	var parsed struct {
+		StatusUrl string `json:"statusUrl"`
+	}
+	if err := json.Unmarshal(respBody, &parsed); err != nil {
+		return "", fmt.Errorf("postRawAsync: parsing async response failed: %w (body=%s)", err, string(respBody))
+	}
+	if parsed.StatusUrl == "" {
+		return "", fmt.Errorf("postRawAsync: async response missing statusUrl (body=%s)", string(respBody))
+	}
+	return parsed.StatusUrl, nil
+}
+
 func mutatingObjectServiceRequest(ctx context.Context, client *perimeter81Sdk.APIClient, method, path string, body interface{}) (string, error) {
 	providerAuthInfo.RLock()
 	apiKey := providerAuthInfo.apiKey
