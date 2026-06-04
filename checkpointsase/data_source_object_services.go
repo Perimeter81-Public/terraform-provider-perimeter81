@@ -91,8 +91,6 @@ func dataSourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m
 		ctx = context.Background()
 	}
 
-	// SDK Protocols field now carries the flat wire shape (BUG-17 SDK fix in
-	// P81-123406), so the previous raw-HTTP workaround is gone.
 	objectServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
 	if err != nil {
 		d.Partial(true)

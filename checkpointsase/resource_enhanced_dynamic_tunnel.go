@@ -281,8 +281,6 @@ func flattenDynamicTunnelDetails(tunnelItems []interface{}) []perimeter81Sdk.Dyn
 		detail := perimeter81Sdk.DynamicTunnelDetails{
 			RegionID: regionId,
 		}
-		// remote_asn is Required + Int per schema; the SDK now stores it as
-		// *ASN where ASN is a named int32 (P81-123406 BUG-24 SDK fix).
 		asn := perimeter81Sdk.ASN(int32(tunnelMap["remote_asn"].(int)))
 		detail.RemoteASN = &asn
 		if v, ok := tunnelMap["auth_type"].(string); ok && v != "" {
@@ -338,9 +336,6 @@ func resourceEnhancedDynamicTunnelCreate(ctx context.Context, d *schema.Resource
 	phase2 := flattenIPSecPhaseConfigV23(d.Get("phase2").([]interface{}))
 	tunnels := flattenDynamicTunnelDetails(d.Get("tunnel").([]interface{}))
 
-	// LeftASN is Required at the API (BUG-24). The SDK type is now a named
-	// int32 (P81-123406 SDK fix), so a direct cast carries the user's
-	// HCL value to the wire as a JSON integer.
 	leftASN := perimeter81Sdk.RemoteASN(int32(d.Get("left_asn").(int)))
 	sharedSettings := perimeter81Sdk.EnhancedIPSecSharedSettingsCreate{
 		P81GatewaySubnets:    p81GatewaySubnets,

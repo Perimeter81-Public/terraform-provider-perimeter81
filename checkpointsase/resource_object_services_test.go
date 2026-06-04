@@ -97,8 +97,6 @@ func testAccCheckObjectServicesAttributes(objectServices *perimeter81Sdk.Objects
 			return fmt.Errorf("got no protocols; want at least one")
 		}
 
-		// P81-123406 BUG-17 SDK fix: protocols entries are flat (no nested
-		// oneOf/anyOf wrapper), so the fields are read directly.
 		proto := objectServices.Protocols[0]
 		gotValueType := proto.ValueType
 		gotValue := proto.Value

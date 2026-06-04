@@ -301,9 +301,7 @@ func resourceEnhancedStaticTunnelCreate(ctx context.Context, d *schema.ResourceD
 	phase2 := flattenIPSecPhaseConfigV23(d.Get("phase2").([]interface{}))
 
 	// Public-api requires `routingType` (string) and `features` (object) on
-	// every static tunnel create — see baseEnhancedIPSecTunnel.dto.ts. The
-	// SDK now sends `peakBandwidthMbps` (P81-123406 BUG-23 SDK fix), so the
-	// previous raw-HTTP detour is gone.
+	// every static tunnel create — see baseEnhancedIPSecTunnel.dto.ts.
 	routingType := perimeter81Sdk.ROUTINGTYPE_ROUTE
 	payload := perimeter81Sdk.StaticTunnelCreate{
 		RegionID:             regionId,

@@ -69,12 +69,9 @@ resourceEnhancedRegionImportState Import an enhanced region by its composite
 ID `<network_id>-<region_id>`. The Read handler needs both the network id (for
 the URL path) and the region id (as d.Id()); terraform's import flow only seeds
 d.Id() with whatever the user passes, so the importer must split the composite
-itself before delegating to Read. BUG-22: the original implementation skipped
-this split entirely and called Read with d.Get("network_id") == "" — every
-import attempt 404'd.
+itself before delegating to Read.
 
-The `-` separator mirrors the pattern already used by resourceGatewayImportState
-(composite `<network_id>-<region_id>` per BUG-15 fix). Enhanced network and
+The `-` separator mirrors resourceGatewayImportState. Enhanced network and
 region IDs are base62-ish 10-char strings that don't contain `-`, so the split
 is unambiguous.
 */
@@ -238,15 +235,11 @@ func resourceEnhancedRegionUpdate(ctx context.Context, d *schema.ResourceData, m
 	oldScaleUnits := int32(oldVal.(int))
 	newScaleUnits := int32(newVal.(int))
 
-	// BUG-20 fix: the public-api's ScaleUnitsDto validator
-	// (scaleUnits.dto.ts) requires `idle` (@IsBoolean() without
-	// @IsOptional()) even though the swagger schema for
-	// ScaleUnitsOperation marks it as merely optional with a default.
-	// The SDK type has `Idle *bool ` so a nil pointer is omitted
-	// from the marshalled body, which made the API reject the request
-	// with `400 Bad Request: idle must be a boolean value`. Pull the
-	// current idle value from state and pass it through so the body
-	// always carries the field.
+	// The public-api ScaleUnitsDto validator requires `idle` (no @IsOptional)
+	// even though the swagger schema marks it optional with a default. The
+	// SDK type is *bool, so a nil pointer is omitted from the body and the
+	// API rejects with `400 Bad Request: idle must be a boolean value`.
+	// Pull idle from state so the body always carries the field.
 	idleVal := d.Get("idle").(bool)
 
 	if newScaleUnits > oldScaleUnits {
@@ -278,7 +271,7 @@ func resourceEnhancedRegionUpdate(ctx context.Context, d *schema.ResourceData, m
 			time.Sleep(60 * time.Second)
 		}
 	} else if newScaleUnits < oldScaleUnits {
-		// Reduce scale units. Same BUG-20 fix as the increase branch.
+		// Reduce scale units. Same idle-field handling as the increase branch.
 		unitsToRemove := oldScaleUnits - newScaleUnits
 		payload := perimeter81Sdk.ScaleUnitsOperation{
 			UnitType:        "standard",

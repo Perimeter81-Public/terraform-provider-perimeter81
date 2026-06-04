@@ -190,6 +190,12 @@ func resourceIpsecRedundant() *schema.Resource {
 								Type: schema.TypeString,
 							},
 						},
+						"peak_bandwidth": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Default:     1000,
+							Description: "Expected peak throughput of the tunnel pair in Mbps. Defaults to 1000. Required by the downstream service even though the public-api DTO marks it optional.",
+						},
 					}},
 			},
 			"tunnel1": {
@@ -367,6 +373,7 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 	sharedSettingsData := d.Get("shared_settings").([]interface{})[0].(map[string]interface{})
 	p81GatewaySubnets := flattenStringsArrayData(sharedSettingsData["p81_gateway_subnets"].([]interface{}))
 	remoteGatewaySubnets := flattenStringsArrayData(sharedSettingsData["remote_gateway_subnets"].([]interface{}))
+	peakBandwidth := int32(sharedSettingsData["peak_bandwidth"].(int))
 	advancedSettingsData := d.Get("advanced_settings").([]interface{})[0].(map[string]interface{})
 	keyExchange := advancedSettingsData["key_exchange"].(string)
 	dpdTimeout := advancedSettingsData["dpd_timeout"].(string)
@@ -409,13 +416,10 @@ func resourceIpsecRedundantCreate(ctx context.Context, d *schema.ResourceData, m
 		SharedSettings: perimeter81Sdk.IPSecSharedSettingsCreate{
 			P81GatewaySubnets:    p81GatewaySubnets,
 			RemoteGatewaySubnets: remoteGatewaySubnets,
-			// P81ASN is Required on the SDK type. The HCL schema for this
-			// resource doesn't expose a `p81_asn` field yet; the standard-
-			// network tunnels were previously blocked by BUG-09 (peakBandwidth
-			// rename), now resolved as part of BUG-23. Until the HCL surface
-			// is broadened, default to 0; the API will likely still reject
-			// until a real value is plumbed through.
-			P81ASN: perimeter81Sdk.RemoteASN(0),
+			PeakBandwidth:        &peakBandwidth,
+			// P81ASN omitted; public-api DTO marks it @IsOptional on both
+			// v2.1 and v2.2 redundant-tunnel paths (BUG-26 / P81-124405).
+			// Adding an HCL surface for it is tracked as a follow-up.
 		},
 		AdvancedSettings: perimeter81Sdk.IPSecAdvancedSettings{
 			KeyExchange: keyExchange,
@@ -500,7 +504,6 @@ func resourceIpsecRedundantRead(ctx context.Context, d *schema.ResourceData, m i
 		networkId = ids[0]
 		tunnelId = ids[1]
 	}
-
 	// get the ipsec-redundant tunnel using the client sdk and check for errors
 	tunnel, _, err := client.IPSecRedundantAPI.StandardGetIPSecRedundantTunnel(ctx, networkId, tunnelId).Execute()
 
@@ -528,15 +531,13 @@ func resourceIpsecRedundantRead(ctx context.Context, d *schema.ResourceData, m i
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set shared settings", err)
 	}
-	if len(ids) != 1 {
-		if err := d.Set("tunnel1", flattenTunnelData(tunnel.Tunnel1)); err != nil {
-			d.Partial(true)
-			return appendErrorDiags(diags, "Unable to set tunnel1", err)
-		}
-		if err := d.Set("tunnel2", flattenTunnelData(tunnel.Tunnel2)); err != nil {
-			d.Partial(true)
-			return appendErrorDiags(diags, "Unable to set tunnel2", err)
-		}
+	if err := d.Set("tunnel1", flattenTunnelData(tunnel.Tunnel1)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel1", err)
+	}
+	if err := d.Set("tunnel2", flattenTunnelData(tunnel.Tunnel2)); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set tunnel2", err)
 	}
 	d.SetId(tunnelId)
 	return diags

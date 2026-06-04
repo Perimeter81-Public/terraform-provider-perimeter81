@@ -139,16 +139,12 @@ func resourceFirewallPolicyCreate(ctx context.Context, d *schema.ResourceData, m
 	networkId := d.Get("network_id").(string)
 
 	// Existence check only: there is no CREATE endpoint for firewall policies
-	// — a policy is created implicitly per network. We verify the policy is
-	// reachable and adopt it by setting the resource ID, then push the HCL
-	// configuration via Update. BUG-18: an earlier version of this Create
-	// also copied the server's current `enabled`/`allowed` values into the
-	// resource data via `d.Set`. That clobbered the HCL values for the
-	// subsequent Update (terraform-plugin-sdk's d.Get prefers a recent
-	// d.Set over the diff/config), so Update pushed the server's existing
-	// values back instead of the user's configuration, and the first apply
-	// always left a `false → true` drift that only resolved on the second
-	// apply. The fix is simply not to call those d.Set calls here.
+	// — a policy is created implicitly per network. Verify the policy is
+	// reachable, adopt it by setting the resource ID, then push the HCL
+	// configuration via Update. Do NOT d.Set("enabled"/"allowed") here:
+	// terraform-plugin-sdk's d.Get prefers a recent d.Set over the diff/config,
+	// so any pre-Update Set would clobber the HCL values and Update would push
+	// the server's existing values back instead of the user's configuration.
 	if _, _, err := client.FirewallPolicyAPI.GetFirewallPolicy(ctx, networkId).Execute(); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to read Firewall Policy for adoption", err)

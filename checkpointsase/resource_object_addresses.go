@@ -150,6 +150,12 @@ func resourceObjectAddressesRead(ctx context.Context, d *schema.ResourceData, m 
 		return appendErrorDiags(diags, "Unable to find object addresses", err)
 	}
 	currentObjectAddresses := getCurrentObjectAddressesInArray(objectsAddresses, d.Id())
+	if currentObjectAddresses == nil {
+		// Resource not present in the list endpoint response. Treat as
+		// removed-out-of-band so terraform plans a recreate next cycle.
+		d.SetId("")
+		return diags
+	}
 
 	if err := d.Set("name", currentObjectAddresses.Name); err != nil {
 		d.Partial(true)

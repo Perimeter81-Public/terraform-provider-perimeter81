@@ -568,6 +568,9 @@ func flattenSharedSettingsData(sharedSettingsItem *perimeter81Sdk.IPSecSharedSet
 		sharedSettingsData := make(map[string]interface{})
 		sharedSettingsData["p81_gateway_subnets"] = sharedSettingsItem.P81GatewaySubnets
 		sharedSettingsData["remote_gateway_subnets"] = sharedSettingsItem.RemoteGatewaySubnets
+		if sharedSettingsItem.PeakBandwidth != nil {
+			sharedSettingsData["peak_bandwidth"] = int(*sharedSettingsItem.PeakBandwidth)
+		}
 		sharedSettings[0] = sharedSettingsData
 		return sharedSettings
 	}
@@ -596,8 +599,7 @@ func flattenTunnelData(tunnelItem *perimeter81Sdk.IPSecRedundantTunnel) []interf
 		tunnelData["p81_gwinternal_ip"] = tunnelItem.P81GWInternalIP
 		tunnelData["remote_gwinternal_ip"] = tunnelItem.RemoteGWInternalIP
 		tunnelData["remote_public_ip"] = tunnelItem.RemotePublicIP
-		// RemoteASN is a tag struct — store empty string as placeholder
-		tunnelData["remote_asn"] = ""
+		tunnelData["remote_asn"] = fmt.Sprintf("%d", int32(tunnelItem.RemoteASN))
 		if tunnelItem.TunnelID != nil {
 			tunnelData["tunnel_id"] = *tunnelItem.TunnelID
 		} else {
@@ -748,23 +750,46 @@ func getRedundantTunnelId(ctx context.Context, networkId string, tunnelBody peri
 		diags = appendErrorDiags(diags, "Unable to fetch network", err)
 		return "", diags
 	}
-	// find the tunnel id based on that tunnel name is unique
+	// Find the redundant tunnel by walking ALL gateways in the target region.
+	// The wire response for the network-find endpoint does NOT include
+	// haTunnelID per-tunnel — instead, redundant tunnel members are returned
+	// as type="ipsec" with isHA=true and a per-tunnel id. The SDK's NetworkTunnel
+	// union dispatcher falls back to NetworkTunnelBase for these (because the
+	// NetworkTunnelIpsecRedundant schema requires haTunnelID which is absent
+	// from this endpoint's response). We use the base tunnel's Id as the
+	// haTunnelId — the API's GET /tunnels/ipsec/redundant/{id} accepts either
+	// member of the pair and returns the full redundant tunnel pair.
 	for _, region := range network.Regions {
-		if region.Id == tunnelBody.RegionID {
-			for _, gateway := range region.Instances {
-				if gateway.Id == tunnelBody.GatewayID {
-					for _, tunnel := range gateway.Tunnels {
-						ifName := getNetworkTunnelInterfaceName(tunnel)
-						if ifName == tunnelBody.TunnelName+"01" || ifName == tunnelBody.TunnelName+"02" {
-							return getNetworkTunnelHaTunnelId(tunnel), diags
-						}
-					}
+		if region.Id != tunnelBody.RegionID {
+			continue
+		}
+		for _, gateway := range region.Instances {
+			for _, tunnel := range gateway.Tunnels {
+				ifName := getNetworkTunnelInterfaceName(tunnel)
+				if ifName != tunnelBody.TunnelName+"01" && ifName != tunnelBody.TunnelName+"02" {
+					continue
 				}
-
+				// Prefer haTunnelID from the redundant-specific variant if present;
+				// otherwise fall back to the base/single-routed tunnel id —
+				// the API's redundant GET endpoint accepts either pair member's
+				// id. The wire structure for redundant tunnel members is
+				// identical to a single ipsec tunnel (type:"ipsec" + isHA:true),
+				// so the SDK union dispatcher routes redundant pair members
+				// into NetworkTunnelIpsecSingle.
+				if id := getNetworkTunnelHaTunnelId(tunnel); id != "" {
+					return id, diags
+				}
+				if tunnel.NetworkTunnelIpsecSingle != nil && tunnel.NetworkTunnelIpsecSingle.Id != "" {
+					return tunnel.NetworkTunnelIpsecSingle.Id, diags
+				}
+				if tunnel.NetworkTunnelBase != nil && tunnel.NetworkTunnelBase.Id != "" {
+					return tunnel.NetworkTunnelBase.Id, diags
+				}
 			}
 		}
 	}
-	diags = appendErrorDiags(diags, "Unable to find tunnel", fmt.Errorf("check tunnel fields there might be overlap error"))
+	diags = appendErrorDiags(diags, "Unable to find tunnel",
+		fmt.Errorf("no tunnel matched name=%s in region=%s; check tunnel fields or naming convention", tunnelBody.TunnelName, tunnelBody.RegionID))
 	return "", diags
 }
 

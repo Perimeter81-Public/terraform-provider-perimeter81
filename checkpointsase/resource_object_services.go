@@ -149,11 +149,9 @@ func resourceObjectServicesRead(ctx context.Context, d *schema.ResourceData, m i
 	client := m.(*perimeter81Sdk.APIClient)
 	ctx = context.Background()
 
-	// BUG-21 fix preserved: look up by id, not by name. On terraform import
-	// only d.Id() is seeded, so a by-name lookup would panic; a by-name
-	// lookup also misbehaves if the service is renamed server-side. The
-	// SDK list now returns the flat protocols structure (BUG-17 SDK fix in
-	// P81-123406) so a single GET + id match is all we need.
+	// Look up by id, not by name. On terraform import only d.Id() is seeded,
+	// so a by-name lookup would panic; it also misbehaves if the service is
+	// renamed server-side.
 	objectsServices, _, err := client.ObjectsServicesAPI.GetObjectsServices(ctx).Execute()
 	if err != nil {
 		d.Partial(true)
