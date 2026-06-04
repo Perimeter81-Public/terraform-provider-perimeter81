@@ -295,8 +295,19 @@ func flattenDynamicTunnelDetails(tunnelItems []interface{}) []perimeter81Sdk.Dyn
 		if v, ok := tunnelMap["remote_public_ip"].(string); ok && v != "" {
 			detail.RemotePublicIP = &v
 		}
-		if v, ok := tunnelMap["remote_id"].(string); ok && v != "" {
-			detail.RemoteID = &v
+		// OPEN-02: the v2.3 API rejects an empty remoteID with
+		// `tunnels.0.remoteID must be a string`, even though the field is
+		// schema-Optional and the description claims the server defaults
+		// it from remote_public_ip. Mirror that documented default
+		// client-side when the user leaves remote_id empty.
+		remoteId, _ := tunnelMap["remote_id"].(string)
+		if remoteId == "" {
+			if v, ok := tunnelMap["remote_public_ip"].(string); ok {
+				remoteId = v
+			}
+		}
+		if remoteId != "" {
+			detail.RemoteID = &remoteId
 		}
 		if v, ok := tunnelMap["p81_gw_internal_ip"].(string); ok && v != "" {
 			detail.P81GWInternalIP = &v
