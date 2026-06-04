@@ -243,16 +243,13 @@ func resourceGatewayRead(ctx context.Context, d *schema.ResourceData, m interfac
 			delete(serverByID, p.Id)
 		}
 	}
-	// Surface gateways that exist server-side but not in state (added externally).
-	for _, srv := range serverByID {
-		refreshed = append(refreshed, GatewayConfig{
-			Id:   srv.Id,
-			Dns:  srv.Dns,
-			Ip:   srv.Ip,
-			Name: "$" + srv.Id + "$", // matches the import-handler placeholder
-			Idle: false,
-		})
-	}
+	// Adopt-style: do NOT surface gateways that exist server-side but are
+	// not in our prior state. Standard networks auto-provision an initial
+	// gateway at network-create time; surfacing it here would cause every
+	// post-apply plan to flag the auto-gateway as extraneous and would
+	// destroy it on apply. To bring an unmanaged gateway under this
+	// resource, use `terraform import 'checkpointsase_gateway.X'
+	// <network_id>-<gateway_id>`.
 	if err := d.Set("gateways", flattenGateways(refreshed)); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Gateway data", err)
