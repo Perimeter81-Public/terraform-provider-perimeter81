@@ -49,6 +49,13 @@ func resourceEnhancedDynamicTunnel() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The name of the dynamic IPSec tunnel.",
+				// The upstream model auto-suffixes the user's tunnel name
+				// with `01` (createIPSecRedundant.transform.ts:113 —
+				// `interfaceName: ${tunnelName}0${i+1}`). Suppress the
+				// resulting drift so plan stays idempotent post-Create.
+				DiffSuppressFunc: func(k, oldValue, newValue string, d *schema.ResourceData) bool {
+					return strings.TrimSuffix(oldValue, "01") == newValue || oldValue == strings.TrimSuffix(newValue, "01")
+				},
 			},
 			"description": {
 				Type:        schema.TypeString,
