@@ -402,6 +402,24 @@ func resourceEnhancedDynamicTunnelCreate(ctx context.Context, d *schema.Resource
 		}
 		if networkStatus.GetCompleted() {
 			dynamicTunnelId = getIdFromUrl(networkStatus.Result.GetResource())
+			if dynamicTunnelId == "" {
+				// Async result didn't carry a resource URL. Fall back to
+				// listing tunnels and finding by tunnel_name.
+				resp, _, lerr := client.EnhancedTunnelsAPI.GetEnhancedRegionTunnelsPerNetwork(ctx, networkId).Execute()
+				if lerr == nil && resp != nil {
+					for _, t := range resp.Data {
+						if t.TunnelName == tunnelName {
+							dynamicTunnelId = t.Id
+							break
+						}
+					}
+				}
+				if dynamicTunnelId == "" {
+					d.Partial(true)
+					return appendErrorDiags(diags, "Unable to extract Enhanced Dynamic Tunnel id post-Create",
+						fmt.Errorf("async status completed but result.resource was empty and list-by-name found no match for tunnel_name=%s", tunnelName))
+				}
+			}
 			break
 		}
 		time.Sleep(60 * time.Second)

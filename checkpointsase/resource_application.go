@@ -226,6 +226,25 @@ func resourceApplicationCreate(ctx context.Context, d *schema.ResourceData, m in
 			if appStatus.Result != nil {
 				applicationId = getIdFromUrl(appStatus.Result.GetResource())
 			}
+			if applicationId == "" {
+				// Async result didn't carry a resource URL. Fall back to
+				// listing applications and finding by name.
+				appName := d.Get("name").(string)
+				resp, _, lerr := client.ApplicationAPI.GetApplications(ctx).Execute()
+				if lerr == nil && resp != nil {
+					for _, a := range resp.Data {
+						if a.Name == appName {
+							applicationId = a.Id
+							break
+						}
+					}
+				}
+				if applicationId == "" {
+					d.Partial(true)
+					return appendErrorDiags(diags, "Unable to extract Application id post-Create",
+						fmt.Errorf("async status completed but result.resource was empty and list-by-name found no match for name=%s", appName))
+				}
+			}
 			break
 		}
 		time.Sleep(30 * time.Second)

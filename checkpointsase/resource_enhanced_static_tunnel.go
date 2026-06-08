@@ -364,6 +364,26 @@ func resourceEnhancedStaticTunnelCreate(ctx context.Context, d *schema.ResourceD
 		}
 		if networkStatus.GetCompleted() {
 			tunnelId = getIdFromUrl(networkStatus.Result.GetResource())
+			if tunnelId == "" {
+				// Async result didn't carry a resource URL (the API
+				// sometimes completes without populating result.resource).
+				// Fall back to listing tunnels by network and finding by
+				// our tunnel_name.
+				resp, _, lerr := client.EnhancedTunnelsAPI.GetEnhancedRegionTunnelsPerNetwork(ctx, networkId).Execute()
+				if lerr == nil && resp != nil {
+					for _, t := range resp.Data {
+						if t.TunnelName == tunnelName {
+							tunnelId = t.Id
+							break
+						}
+					}
+				}
+				if tunnelId == "" {
+					d.Partial(true)
+					return appendErrorDiags(diags, "Unable to extract Enhanced Static Tunnel id post-Create",
+						fmt.Errorf("async status completed but result.resource was empty and list-by-name found no match for tunnel_name=%s", tunnelName))
+				}
+			}
 			break
 		}
 		time.Sleep(60 * time.Second)
