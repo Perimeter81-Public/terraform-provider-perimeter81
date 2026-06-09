@@ -274,16 +274,52 @@ func resourceApplicationRead(ctx context.Context, d *schema.ResourceData, m inte
 		return appendErrorDiags(diags, "Unable to find Application", err)
 	}
 
-	var appName, appType string
-	if appData.HttpApplication != nil {
-		appName = appData.HttpApplication.Name
-		appType = appData.HttpApplication.Type
-	} else if appData.HttpsApplication != nil {
-		appName = appData.HttpsApplication.Name
-		appType = appData.HttpsApplication.Type
-	} else if appData.RdpApplication != nil {
-		appName = appData.RdpApplication.Name
-		appType = appData.RdpApplication.Type
+	// Extract the common fields from whichever sub-application variant
+	// the union dispatcher routed the response into. The schema fields
+	// (name/type/host/network/port/users) are identical across http/https/
+	// rdp variants for our purposes.
+	var (
+		appName, appType, appHost, appNetwork string
+		appPort                               int
+		appUsers                              []string
+	)
+	switch {
+	case appData.HttpApplication != nil:
+		a := appData.HttpApplication
+		appName, appType, appHost = a.Name, a.Type, a.Host.Value
+		appNetwork = a.Network.Id
+		if a.Port.Value.Int32 != nil {
+			appPort = int(*a.Port.Value.Int32)
+		}
+		for _, u := range a.Users {
+			if u.Id != nil {
+				appUsers = append(appUsers, *u.Id)
+			}
+		}
+	case appData.HttpsApplication != nil:
+		a := appData.HttpsApplication
+		appName, appType, appHost = a.Name, a.Type, a.Host.Value
+		appNetwork = a.Network.Id
+		if a.Port.Value.Int32 != nil {
+			appPort = int(*a.Port.Value.Int32)
+		}
+		for _, u := range a.Users {
+			if u.Id != nil {
+				appUsers = append(appUsers, *u.Id)
+			}
+		}
+	case appData.RdpApplication != nil:
+		a := appData.RdpApplication
+		appName, appType, appHost = a.Name, a.Type, a.Host.Value
+		appNetwork = a.Network.Id
+		if a.Port.Value.Int32 != nil {
+			appPort = int(*a.Port.Value.Int32)
+		}
+		for _, u := range a.Users {
+			if u.Id != nil {
+				appUsers = append(appUsers, *u.Id)
+			}
+		}
 	}
 
 	if err := d.Set("name", appName); err != nil {
@@ -293,6 +329,24 @@ func resourceApplicationRead(ctx context.Context, d *schema.ResourceData, m inte
 	if err := d.Set("type", appType); err != nil {
 		d.Partial(true)
 		return appendErrorDiags(diags, "Unable to set Application type", err)
+	}
+	if err := d.Set("host", appHost); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Application host", err)
+	}
+	if err := d.Set("network", appNetwork); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Application network", err)
+	}
+	if appPort != 0 {
+		if err := d.Set("port", appPort); err != nil {
+			d.Partial(true)
+			return appendErrorDiags(diags, "Unable to set Application port", err)
+		}
+	}
+	if err := d.Set("users", appUsers); err != nil {
+		d.Partial(true)
+		return appendErrorDiags(diags, "Unable to set Application users", err)
 	}
 
 	return diags

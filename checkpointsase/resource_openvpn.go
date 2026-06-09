@@ -127,6 +127,15 @@ func resourceOpenvpnImportState(ctx context.Context, d *schema.ResourceData, m i
 			}
 		}
 	}
+	// `version` is a HCL-only credential-rotation trigger; the server
+	// doesn't store it, so Read can't refresh it. Default state to 1 so
+	// import + plan stays idempotent for the typical HCL `version = 1`
+	// declaration. Users with a different version value will see a
+	// drift on next plan and can either reconcile HCL to 1 or apply
+	// to rotate credentials.
+	if err := d.Set("version", 1); err != nil {
+		return nil, fmt.Errorf("could not set default version after import: %v", err)
+	}
 	return []*schema.ResourceData{d}, nil
 }
 

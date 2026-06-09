@@ -119,6 +119,18 @@ func resourceGatewayImportState(ctx context.Context, d *schema.ResourceData, m i
 	if len(gateways) == 0 {
 		return nil, fmt.Errorf("could not import gateways please make sure that the netwrok_id and the region_id are correct\n")
 	}
+	// LIMITATION: the wire-level NetworkInstance struct has no Name
+	// field — Name is HCL-only. On import we have no way to recover the
+	// user's intended names, so we use a `$<id>$` placeholder per
+	// gateway. After import, the user MUST either:
+	//   (a) update HCL to declare each gateways block with the matching
+	//       placeholder name (then run plan-clean), or
+	//   (b) add `lifecycle { ignore_changes = [gateways] }` and manage
+	//       gateways outside of terraform, or
+	//   (c) destroy + re-create through HCL to get user-chosen names.
+	// The Read function's adopt-style filter prevents NEW server-side
+	// additions from showing up in plan, but cannot retroactively know
+	// the names of gateways already in state.
 	newGateways := make([]GatewayConfig, 0)
 	for _, gateway := range gateways {
 		newGateways = append(newGateways, GatewayConfig{
